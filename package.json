@@ -1,5 +1,11 @@
 {
   "devDependencies": {
     "@types/react": "^19.2.7"
+  },
+  "scripts": {
+    "install": "npx create-next-app@latest notworking --use-npm"
+  },
+  "dependencies": {
+    "firebase": "^9.22.1"
   }
 }
