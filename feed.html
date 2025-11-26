@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NotWorking Feed — World's Largest Professional NOT-working Network</title>
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-comic {
+            font-family: 'Comic Neue', cursive;
+        }
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <!-- ========================== 
+         NAVBAR
+    =========================== -->
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <!-- Left Nav -->
+            <div class="flex items-center gap-4">
+                <a href="index.html">
+                    <img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" />
+                </a>
+                <div class="relative hidden sm:block">
+                    <i data-lucide="search" class="w-4 h-4 absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text"
+                        class="search-bar bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                        placeholder="Search unemployed legends..." />
+                </div>
+            </div>
+
+            <!-- Right Nav -->
+            <div class="flex items-center gap-2 sm:gap-4 text-slate-500">
+                <a href="feed.html" class="flex flex-col items-center gap-0.5 px-2 text-brand-blue" title="Home">
+                    <i data-lucide="home" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Home</span>
+                </a>
+                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
+                    title="Groups">
+                    <i data-lucide="users-2" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Groups</span>
+                </a>
+                <a href="#post-content" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
+                    title="Create Post">
+                    <i data-lucide="plus-square" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Post</span>
+                </a>
+                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
+                    title="Messaging">
+                    <i data-lucide="message-square" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Messaging</span>
+                </a>
+                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue relative">
+                    <i data-lucide="bell" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Notifications</span>
+                </a>
+                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <!-- Profile Dropdown -->
+                <div class="relative group">
+                    <!-- Dropdown Trigger -->
+                    <button class="flex flex-col items-center gap-0.5 px-2 text-slate-500 hover:text-brand-blue"
+                        title="Profile">
+                        <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
+                            class="w-6 h-6 rounded-full" />
+                        <span id="nav-profile-name" class="text-xs font-bold hidden sm:block">Me</span>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-1
+                                opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200
+                                transform origin-top-right -translate-y-2 group-hover:translate-y-0">
+                        <div class="px-4 py-3 border-b border-slate-100">
+                            <p id="dropdown-user-name" class="text-sm font-semibold text-slate-800 truncate">Loading...
+                            </p>
+                            <p id="dropdown-user-email" class="text-xs text-slate-500 truncate">...</p>
+                        </div>
+                        <a href="profile.html"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-blue">View
+                            Profile</a>
+                        <a href="#" id="nav-logout-btn"
+                            class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-500">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN FEED LAYOUT -->
+    <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="hidden lg:block col-span-1">
+            <div class="space-y-6">
+                <!-- User Mini Profile -->
+                <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <div class="h-16 bg-slate-200"></div>
+                    <div class="p-4 text-center -mt-8">
+                        <img id="sidebar-profile-img" src="src/assets/avatar-placeholder.png"
+                            class="w-16 h-16 rounded-full mx-auto border-4 border-white" />
+                        <h3 id="sidebar-profile-name" class="font-bold mt-2">Loading...</h3>
+                        <p id="sidebar-profile-email" class="text-sm text-slate-500">...</p>
+                        <p class="text-xs text-slate-500 mt-2 italic">"Master of applying at 2AM"</p>
+                    </div>
+                </div>
+                <!-- Quick Navigation -->
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                    <ul class="space-y-1 text-sm font-medium text-slate-600">
+                        <li><a href="feed.html"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50 text-brand-blue bg-slate-100"><i
+                                    data-lucide="layout-dashboard" class="w-5 h-5"></i> Unemployed Feed</a></li>
+                        <li><a href="#"
+                                class="nav-link flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50"><i
+                                    data-lucide="users-2" class="w-5 h-5"></i> Groups</a></li>
+                        <li><a href="#"
+                                class="nav-link flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50"><i
+                                    data-lucide="bookmark" class="w-5 h-5"></i> Saved Posts</a></li>
+                        <li><a href="#" id="logout-btn"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50"><i
+                                    data-lucide="log-out" class="w-5 h-5"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- FEED -->
+        <main class="col-span-1 lg:col-span-2 space-y-6">
+            <!-- Create Post Box -->
+            <div class="bg-white p-5 rounded-2xl shadow mb-6 border border-slate-200">
+                <div class="flex items-start gap-4 mb-4">
+                    <img id="create-post-avatar" src="src/assets/avatar-placeholder.png"
+                        class="w-12 h-12 rounded-full flex-shrink-0" />
+                    <textarea id="post-input"
+                        class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:bg-white transition"
+                        placeholder="Share your pain, humiliation or latest rejection..." rows="3"></textarea>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="flex gap-2">
+                        <button id="photo-upload-btn" class="p-2 rounded-full hover:bg-slate-100 text-slate-500" title="Upload Photo">
+                            <i data-lucide="image" class="w-5 h-5"></i>
+                        </button>
+                        <button id="video-upload-btn" class="p-2 rounded-full hover:bg-slate-100 text-slate-500" title="Upload Video">
+                            <i data-lucide="video" class="w-5 h-5"></i>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" accept="image/*,video/*" />
+                    </div>
+                    <button id="post-btn"
+                        class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition">
+                        Post to the Void
+                    </button>
+                </div>
+            </div>
+
+            <!-- Container for posts, with a loading spinner initially -->
+            <div id="feed-posts-container" class="space-y-6">
+                <div id="loading-spinner" class="flex justify-center items-center py-20">
+                    <i data-lucide="loader-2" class="w-12 h-12 text-slate-400 animate-spin"></i>
+                </div>
+                <div id="load-more-container" class="text-center hidden">
+                    <button id="load-more-btn" class="px-6 py-3 bg-slate-800 hover:bg-black text-white font-bold rounded-xl transition">Load More Posts</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="hidden lg:block col-span-1">
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                    <h3 class="font-bold mb-4">Trending on NotWorking 🔥</h3>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#Rejected101</a></li>
+                        <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#LaidOffLegends</a></li>
+                        <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#OpenToNothing</a></li>
+                        <li><a href="#"
+                                class="nav-link hover:text-brand-blue font-medium">#WaitingForHRCallSince2023</a></li>
+                        <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#AppliedTo100Jobs</a></li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                    <h3 class="font-bold mb-4">Suggested Groups</h3>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
+                            😒</div>
+                        <div class="flex-1">
+                            <p class="font-bold text-sm">HR Ghost Stories</p>
+                        </div>
+                        <button class="nav-link text-sm font-bold text-brand-blue hover:underline">Join</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // This script tag is intentionally left for lucide icons initialization if needed later.
+        // All main logic is moved to the module script below.
+    </script>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Centralized clients
+        import { auth } from '../Data/firebase-client.js';
+        import supabase from '../Data/supabase-client.js';
+
+        // Firebase functions
+        import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        // --- STATE MANAGEMENT ---
+        let currentPage = 0;
+        const POSTS_PER_PAGE = 10;
+
+        // --- UI UPDATE FUNCTION ---
+        const updateUserProfileUI = (user) => {
+            const displayName = user.displayName || user.email.split('@')[0];
+            const photoURL = user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`; // Use UID for a consistent random avatar
+
+            // Nav Bar
+            document.getElementById('nav-profile-img').src = photoURL;
+            document.getElementById('nav-profile-name').textContent = displayName.split(' ')[0]; // Show first name
+
+            // Sidebar
+            document.getElementById('sidebar-profile-img').src = photoURL;
+            document.getElementById('sidebar-profile-name').textContent = displayName;
+            document.getElementById('sidebar-profile-email').textContent = user.email;
+
+            // Dropdown Header
+            document.getElementById('dropdown-user-name').textContent = displayName;
+            document.getElementById('dropdown-user-email').textContent = user.email;
+
+            // Create Post box
+            document.getElementById('create-post-avatar').src = photoURL;
+        };
+
+        // --- UPLOAD LOGIC ---
+        async function uploadFile(file) {
+            const user = auth.currentUser;
+            if (!user) return null;
+
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.uid}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('media') // Assumes you have a 'media' bucket in Supabase Storage
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error('Error uploading file:', uploadError);
+                return null;
+            }
+
+            // Get public URL
+            const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+            return data.publicUrl;
+        }
+
+        // --- POSTING LOGIC ---
+        async function createPost() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("You must be logged in to post.");
+                return;
+            }
+            
+            const postContent = document.getElementById("post-input").value;
+            const fileInput = document.getElementById("file-input");
+            const file = fileInput.files[0];
+
+            if (!postContent.trim() && !file) {
+                alert("Are you trying to post oxygen? Write something or add a file.");
+                return;
+            }
+
+            const postBtn = document.getElementById('post-btn');
+            postBtn.disabled = true;
+            postBtn.textContent = 'Posting...';
+
+            let mediaUrl = null;
+            let mediaType = null;
+
+            if (file) {
+                mediaUrl = await uploadFile(file);
+                if (!mediaUrl) {
+                    alert("Error uploading file. Please try again.");
+                    postBtn.disabled = false;
+                    postBtn.textContent = 'Post to the Void';
+                    return;
+                }
+                mediaType = file.type.startsWith('image') ? 'image' : 'video';
+            }
+
+            const { data, error } = await supabase
+                .from("posts")
+                .insert([{ user_id: user.uid, content: postContent, media_url: mediaUrl, media_type: mediaType }]);
+
+            if (error) {
+                console.error(error);
+                alert("Error posting to the void.");
+            } else {
+                document.getElementById("post-input").value = ""; // reset field
+                fileInput.value = ""; // reset file input
+                // The realtime subscription will handle the refresh, no need to call fetchPosts() here.
+            }
+        }
+
+        // --- UI HELPERS ---
+        function updateLikeCountUI(postId, newCount) {
+            const likeButton = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+            if (likeButton) {
+                likeButton.querySelector('span').textContent = newCount;
+            }
+        }
+
+        // --- LIKING LOGIC ---
+        async function toggleLike(postId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // First, check if the user has already liked the post
+            const { data: existingLike, error: selectError } = await supabase
+                .from('likes')
+                .select('id')
+                .eq('post_id', postId)
+                .eq('user_id', user.uid)
+                .single();
+
+            if (existingLike) { // If like exists, unlike it
+                await supabase.from('likes').delete().eq('id', existingLike.id);
+            } else { // If no like, create one
+                await supabase.from('likes').insert({ post_id: postId, user_id: user.uid });
+            }
+            // The realtime subscription for 'likes' will handle the UI update.
+        }
+
+        function createPostElement(post) {
+            const authorName = post.profiles?.full_name || 'Anonymous User';
+            const authorAvatar = post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`;
+            const likeCount = post.likes && post.likes.length > 0 ? post.likes[0].count : 0;
+
+            const postDiv = document.createElement('div');
+            postDiv.id = `post-${post.id}`;
+            postDiv.className = "bg-white p-5 rounded-2xl shadow border border-slate-200";
+
+            let mediaHTML = '';
+            if (post.media_url && post.media_type === 'image') {
+                mediaHTML = `<img src="${post.media_url}" class="mt-4 rounded-lg border border-slate-200 w-full" alt="Post image">`;
+            } else if (post.media_url && post.media_type === 'video') {
+                mediaHTML = `<video controls src="${post.media_url}" class="mt-4 rounded-lg border border-slate-200 w-full"></video>`;
+            }
+
+            postDiv.innerHTML = `
+                <div class="flex items-start gap-4">
+                    <img src="${authorAvatar}" class="w-12 h-12 rounded-full flex-shrink-0" />
+                    <div class="w-full">
+                        <div class="flex justify-between items-center">
+                            <strong class="text-slate-900">${authorName}</strong>
+                            <span class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</span>
+                        </div>
+                        <p class="mt-3 text-slate-800 text-lg">${post.content}</p>
+                        ${mediaHTML}
+                        <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm">
+                            <button class="like-btn flex items-center gap-2 hover:text-red-500" data-post-id="${post.id}">
+                                <i data-lucide="heart" class="w-4 h-4"></i> 
+                                <span>${likeCount}</span>
+                            </button>
+                            <button class="flex items-center gap-2 hover:text-blue-500">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> 0
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Initialize the icon for just this new element
+            lucide.createIcons({
+                nodes: [postDiv]
+            });
+            return postDiv;
+        }
+
+        // --- FETCHING & RENDERING POSTS ---
+        async function fetchPosts() {
+            const from = currentPage * POSTS_PER_PAGE;
+            const to = from + POSTS_PER_PAGE - 1;
+
+            const { data: posts, error: postsError } = await supabase
+                .from("posts")
+                .select(`
+                    *,
+                    media_url,
+                    media_type,
+                    likes(count),
+                    profiles (
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+
+            if (postsError) {
+                console.error("Error fetching posts:", postsError);
+                return;
+            }
+
+            renderPosts(posts, currentPage === 0);
+
+            // Show or hide the "Load More" button
+            const loadMoreContainer = document.getElementById('load-more-container');
+            if (posts.length < POSTS_PER_PAGE) {
+                loadMoreContainer.classList.add('hidden');
+            } else {
+                loadMoreContainer.classList.remove('hidden');
+            }
+
+            currentPage++;
+        }
+
+        function renderPosts(posts, clearContainer) {
+            const container = document.getElementById("feed-posts-container");
+            document.getElementById('loading-spinner').classList.add('hidden');
+
+            if (clearContainer) {
+                container.innerHTML = ''; // Only clear for the first page load
+            }
+
+            if (!posts || posts.length === 0 && clearContainer) {
+                container.innerHTML = `<div class="text-center text-slate-500 py-10">The void is quiet... Be the first to scream into it.</div>`;
+                return;
+            }
+
+            posts.forEach(post => {
+                const postElement = createPostElement(post);
+                container.appendChild(postElement);
+            });
+        }
+
+        // --- REALTIME SUBSCRIPTION ---
+        const postsChannel = supabase
+            .channel('public:posts')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
+                console.log('New post detected, prepending to feed.');
+                const { data: newPost, error } = await supabase.from('posts').select(`*, likes(count), profiles(*)`).eq('id', payload.new.id).single();
+                if (error) return console.error("Error fetching new post details:", error);
+                
+                const postElement = createPostElement(newPost);
+                document.getElementById('feed-posts-container').prepend(postElement);
+            })
+            .subscribe();
+        
+        const likesChannel = supabase
+            .channel('public:likes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
+                console.log('Like change detected', payload);
+                const postId = payload.new.post_id || payload.old.post_id;
+                if (postId) {
+                    const { count, error } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
+                    if (error) console.error('Error counting likes:', error);
+                    else updateLikeCountUI(postId, count);
+                }
+            })
+            .subscribe();
+
+        // --- EVENT DELEGATION FOR LIKES ---
+        document.getElementById('feed-posts-container').addEventListener('click', (e) => {
+            const likeButton = e.target.closest('.like-btn');
+            if (likeButton) {
+                toggleLike(likeButton.dataset.postId);
+            }
+        });
+
+        // --- AUTH STATE OBSERVER ---
+        onIdTokenChanged(auth, async (user) => {
+            if (user) {
+                console.log('User state changed. Updating UI and Supabase token.');
+                updateUserProfileUI(user);
+
+                // Get the latest token and set the Supabase session.
+                // This runs on login and whenever the token refreshes.
+                try {
+                    const token = await user.getIdToken();
+                    const { error } = await supabase.auth.setSession({ access_token: token });
+                    if (error) throw error;
+                } catch (error) {
+                    console.error('Error getting Firebase token for Supabase:', error);
+                    return; // Stop execution if we can't auth with Supabase
+                }
+
+                // Initial fetch of posts
+                fetchPosts();
+
+            } else {
+                // User is signed out
+                console.log('User is signed out. Redirecting to login.');
+                // Redirect to login page if not authenticated
+                window.location.href = 'Auth/login.html';
+            }
+        });
+
+        // --- FILE UPLOAD BUTTON LISTENERS ---
+        const fileInput = document.getElementById('file-input');
+        document.getElementById('photo-upload-btn').addEventListener('click', () => {
+            fileInput.click();
+        });
+        document.getElementById('video-upload-btn').addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // --- POST BUTTON LISTENER ---
+        document.getElementById("post-btn").addEventListener("click", createPost);
+
+        // --- LOAD MORE BUTTON LISTENER ---
+        document.getElementById('load-more-btn').addEventListener('click', fetchPosts);
+
+        // --- LOGOUT LOGIC ---
+        const handleLogout = (e) => {
+            e.preventDefault();
+            signOut(auth).catch((error) => {
+                console.error('Logout Error', error);
+            });
+        };
+
+        // Attach to both logout buttons
+        const sidebarLogoutButton = document.getElementById('logout-btn');
+        const navLogoutButton = document.getElementById('nav-logout-btn');
+
+        sidebarLogoutButton.addEventListener('click', handleLogout);
+        navLogoutButton.addEventListener('click', handleLogout);
+
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

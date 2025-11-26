@@ -1,0 +1,260 @@
+/* Landing Page */
+.landing {
+    background: #ffffff;
+    font-family: "Poppins", sans-serif;
+    color: #222;
+}
+
+/* Navbar */
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 40px;
+    border-bottom: 1px solid #ddd;
+    background: white;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo {
+    width: 38px;
+    height: 38px;
+}
+
+.nav-links a {
+    margin: 0 15px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+}
+
+.login-btn {
+    background: black;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    cursor: pointer;
+}
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 80px 10px 40px;
+    max-width: 850px;
+    margin: auto;
+}
+
+.highlight {
+    color: #ff3b3b;
+    font-weight: 800;
+}
+
+.subtext {
+    margin-top: 12px;
+    font-size: 18px;
+    color: #444;
+}
+
+.cta-btn {
+    margin-top: 22px;
+    padding: 14px 34px;
+    background: black;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.hero-img {
+    margin-top: 40px;
+    width: 65%;
+}
+
+/* Features */
+.features {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin: 50px auto;
+    max-width: 900px;
+}
+
+.feature-box {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    width: 30%;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    color: #666;
+}
+
+/* FEED PAGE */
+.feed-body {
+    background: #f3f2ef;
+    font-family: "Poppins", sans-serif;
+}
+
+/* Navbar */
+.feed-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    background: white;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.left-nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-logo {
+    width: 40px;
+}
+
+.search-bar {
+    padding: 8px 12px;
+    width: 260px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.right-nav .nav-icon {
+    margin: 0 10px;
+    font-size: 20px;
+    text-decoration: none;
+}
+
+.profile-btn {
+    background: black;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+/* Feed layout */
+.feed-container {
+    display: flex;
+    width: 90%;
+    margin: auto;
+    margin-top: 20px;
+    gap: 25px;
+}
+
+/* Left sidebar */
+.left-sidebar {
+    width: 22%;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+.profile-avatar {
+    width: 70px;
+    margin-top: -40px;
+    border-radius: 50%;
+}
+
+/* Feed center */
+.feed {
+    width: 55%;
+}
+
+.create-post {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    padding: 18px;
+    display: flex;
+    gap: 10px;
+}
+
+.create-post input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.post-btn {
+    background: black;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+}
+
+/* Post card */
+.post-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    padding: 18px;
+    margin-top: 18px;
+}
+
+.post-header {
+    display: flex;
+    gap: 10px;
+}
+
+.post-avatar {
+    width: 50px;
+    border-radius: 50%;
+}
+
+.post-text {
+    margin-top: 12px;
+    line-height: 1.4;
+}
+
+.post-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 12px;
+    padding: 6px;
+}
+
+/* Right Sidebar */
+.right-sidebar {
+    width: 23%;
+}
+
+.trending-box {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    padding: 18px;
+}
+
+.trending-box ul {
+    padding-left: 18px;
+}

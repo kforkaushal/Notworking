@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - NotWorking</title>
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <div class="min-h-screen flex flex-col items-center justify-center py-12">
+        <div class="max-w-md w-full mx-auto p-4">
+            <a href="index.html" class="flex justify-center mb-8">
+                <img src="src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+            </a>
+
+            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Join the Ranks</h1>
+                    <p class="text-slate-500 mt-1">Create an account to start doing nothing.</p>
+                </div>
+
+                <form id="signup-form" class="space-y-6">
+                    <div>
+                        <label for="fullname" class="block text-sm font-medium text-slate-700">Full Name</label>
+                        <div class="mt-1">
+                            <input id="fullname" name="fullname" type="text" autocomplete="name" required
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-700">Email address</label>
+                        <div class="mt-1">
+                            <input id="email" name="email" type="email" autocomplete="email" required
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+                        <div class="mt-1">
+                            <input id="password" name="password" type="password" autocomplete="new-password" required
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="hidden text-sm text-red-600 bg-red-100 p-3 rounded-md text-center"></div>
+
+                    <div>
+                        <button type="submit"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all hover:scale-105 active:scale-95">
+                            Join the Void
+                        </button>
+                    </div>
+                </form>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-slate-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="bg-white px-2 text-slate-500">Or sign up with</span>
+                    </div>
+                </div>
+
+                <div>
+                    <button id="google-signup-btn" type="button"
+                        class="w-full inline-flex justify-center items-center py-3 px-4 border border-slate-300 rounded-full shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all hover:scale-105 active:scale-95">
+                        <img class="w-5 h-5" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon">
+                        <span class="ml-2">Sign up with Google</span>
+                    </button>
+                </div>
+
+                <p class="mt-6 text-center text-sm text-slate-500">
+                    Already a member?
+                    <a href="login.html" class="font-bold text-brand-blue hover:underline">Log in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Centralized clients
+        import { auth, db } from '../Data/firebase-client.js';
+        import supabase from '../Data/supabase-client.js';
+
+        // Firebase functions
+        import { createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        // --- REDIRECT IF ALREADY LOGGED IN ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in, redirect to feed.
+                console.log('User already logged in. Redirecting to feed...');
+                window.location.href = '../feed.html';
+            }
+        });
+
+        // --- SIGN UP LOGIC ---
+        const signupForm = document.getElementById('signup-form');
+        const errorMessageDiv = document.getElementById('error-message');
+
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent the form from submitting the default way
+
+            const fullname = signupForm.fullname.value;
+            const email = signupForm.email.value;
+            const password = signupForm.password.value;
+
+            let firebaseUser; // To hold the user object
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    // Signed up successfully, now update the Auth profile
+                    firebaseUser = userCredential.user;
+                    await updateProfile(firebaseUser, {
+                        displayName: fullname
+                    });
+
+                    // Create a document in Firestore
+                    const userDocRef = doc(db, "users", firebaseUser.uid);
+                    await setDoc(userDocRef, {
+                        displayName: fullname,
+                        email: firebaseUser.email,
+                        bio: "Thrilled to announce... nothing. Absolutely nothing. 🤡",
+                        skills: ["Sleeping all day", "Applying at 3AM", "Ghosted by HR"],
+                        experience: "No real experience yet — still collecting rejection letters 💌",
+                        badges: ["Master of excuses", "LinkedIn Scroller"],
+                        createdAt: serverTimestamp()
+                    });
+
+                    // ALSO, create a profile in Supabase
+                    const { error: supabaseError } = await supabase.from('profiles').insert({
+                        id: firebaseUser.uid, // Use Firebase UID as the ID
+                        full_name: fullname,
+                        email: firebaseUser.email
+                    });
+
+                    if (supabaseError) throw supabaseError; // If Supabase fails, throw error
+                })
+                .then(() => {
+                    console.log('User profile created in Auth and Firestore.');
+                    // Now redirect to the feed page
+                    window.location.href = "../feed.html";
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.error('Signup Error:', errorCode, errorMessage);
+                    errorMessageDiv.textContent = `Error: ${errorMessage}`;
+                    errorMessageDiv.classList.remove('hidden');
+                });
+        });
+
+        // --- GOOGLE SIGN-UP LOGIC ---
+        const googleSignUpBtn = document.getElementById('google-signup-btn');
+        const provider = new GoogleAuthProvider();
+
+        googleSignUpBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider)
+                .then(async (result) => {
+                    const additionalInfo = getAdditionalUserInfo(result);
+                    const user = result.user;
+
+                    // If it's a new user, create their Firestore document
+                    if (additionalInfo.isNewUser) {
+                        console.log("New Google user, creating profiles in Firestore and Supabase...");
+                        // Create in Firestore
+                        const userDocRef = doc(db, "users", user.uid);
+                        await setDoc(userDocRef, {
+                            displayName: user.displayName,
+                            email: user.email,
+                            photoURL: user.photoURL,
+                            bio: "Just landed on NotWorking, ready to do nothing!",
+                            skills: ["Google Sign-In Pro"],
+                            experience: "Expert in clicking 'Allow' on popups.",
+                            badges: ["Early Adopter"],
+                            createdAt: serverTimestamp()
+                        });
+
+                        // ALSO, create a profile in Supabase
+                        const { error: supabaseError } = await supabase.from('profiles').insert({
+                            id: user.uid, // Use Firebase UID as the ID
+                            full_name: user.displayName,
+                            avatar_url: user.photoURL,
+                            email: user.email
+                        });
+                        if (supabaseError) throw supabaseError;
+                    }
+
+                    window.location.href = '../feed.html';
+                }).catch((error) => {
+                    console.error('Google Sign-In Error:', error);
+                    errorMessageDiv.textContent = `Error: ${error.message}`;
+                    errorMessageDiv.classList.remove('hidden');
+                });
+        });
+    </script>
+</body>
+
+</html>
