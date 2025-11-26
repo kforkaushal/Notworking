@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - NotWorking</title>
+    <link rel="icon" type="image/png" href="../src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+
+    <div
+        class="relative min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-red-100 to-blue-100 rounded-full blur-3xl opacity-50 animate-pulse">
+        </div>
+        <div class="max-w-xl w-full mx-auto relative z-10">
+            <a href="../index.html" class="flex justify-center mb-8">
+                <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+            </a>
+
+            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Contact the Void</h1>
+                    <p class="text-slate-500 mt-1">Have a complaint? A suggestion? A cry for help? Send it our way. We might read it.</p>
+                </div>
+
+                <form id="contact-form" class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700">Full Name</label>
+                        <div class="mt-1">
+                            <input id="name" name="name" type="text" required
+                                class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-700">Email address</label>
+                        <div class="mt-1">
+                            <input id="email" name="email" type="email" autocomplete="email" required
+                                class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-slate-700">Subject</label>
+                        <div class="mt-1">
+                            <input id="subject" name="subject" type="text" required
+                                class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-slate-700">Message</label>
+                        <div class="mt-1">
+                            <textarea id="message" name="message" rows="4" required
+                                class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"></textarea>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" id="submit-btn"
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all hover:scale-105 active:scale-95">
+                            Send Message into the Abyss
+                        </button>
+                    </div>
+                </form>
+                <div id="form-status" class="mt-4 text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const { createClient } = supabase;
+
+        // TODO: Replace with your Supabase project URL and anon key
+        const SUPABASE_URL = 'https://njvjmrazzknoxxfcehaq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qdmptcmF6emtub3h4ZmNlaGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMzAwNDMsImV4cCI6MjA3OTcwNjA0M30.XuhXlcs2zawCUyeIk6xL0KmJAXjF0RbQkVj44sl8n60';
+
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const contactForm = document.getElementById('contact-form');
+        const statusDiv = document.getElementById('form-status');
+        const submitBtn = document.getElementById('submit-btn');
+
+        contactForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            const formData = new FormData(contactForm);
+            const formProps = Object.fromEntries(formData);
+
+            const { data, error } = await supabaseClient
+                .from('messages') // Assumes you have a 'messages' table
+                .insert([
+                    { name: formProps.name, email: formProps.email, subject: formProps.subject, message: formProps.message },
+                ]);
+
+            if (error) {
+                statusDiv.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message into the Abyss';
+            } else {
+                statusDiv.innerHTML = `<p class="text-green-500">Success! Your message has been successfully ignored.</p>`;
+                contactForm.reset();
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message into the Abyss';
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        });
+    </script>
+
+</body>
+
+</html>
