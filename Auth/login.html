@@ -21,8 +21,8 @@
 
     <div class="min-h-screen flex flex-col items-center justify-center">
         <div class="max-w-md w-full mx-auto p-4">
-            <a href="index.html" class="flex justify-center mb-8">
-                <img src="src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+            <a href="../index.html" class="flex justify-center mb-8">
+                <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
             </a>
 
             <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
@@ -43,10 +43,19 @@
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
-                        <div class="mt-1">
+                        <div class="mt-1 relative">
                             <input id="password" name="password" type="password" autocomplete="current-password" required
                                 class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
                                 value="password123">
+                            <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600">
+                                <i id="password-icon" data-lucide="eye-off" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end">
+                        <div class="text-sm">
+                            <a href="#" id="forgot-password-link" class="font-medium text-brand-blue hover:text-brand-blue/80">Forgot your password?</a>
                         </div>
                     </div>
 
@@ -92,7 +101,7 @@
         import { auth } from '../Data/firebase-client.js';
 
         // Firebase functions
-        import { signInWithEmailAndPassword, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { signInWithEmailAndPassword, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 
         // --- REDIRECT IF ALREADY LOGGED IN ---
@@ -107,6 +116,7 @@
         // --- LOGIN LOGIC ---
         const loginForm = document.getElementById('login-form');
         const errorMessageDiv = document.getElementById('error-message');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
 
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault(); // Prevent the form from submitting the default way
@@ -125,6 +135,8 @@
                 .catch((error) => {
                     const errorMessage = "Invalid email or password. Please try again.";
                     console.error('Login Error:', error.code, error.message);
+                    errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
+                    errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
                     errorMessageDiv.textContent = errorMessage;
                     errorMessageDiv.classList.remove('hidden');
                 });
@@ -150,6 +162,48 @@
                     errorMessageDiv.classList.remove('hidden');
                 });
         });
+
+        // --- FORGOT PASSWORD LOGIC ---
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const email = loginForm.email.value;
+            if (!email) {
+                errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
+                errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
+                errorMessageDiv.textContent = "Please enter your email address in the email field first.";
+                errorMessageDiv.classList.remove('hidden');
+                return;
+            }
+
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    errorMessageDiv.classList.remove('bg-red-100', 'text-red-600');
+                    errorMessageDiv.classList.add('bg-green-100', 'text-green-600');
+                    errorMessageDiv.textContent = `Password reset link sent to ${email}. Please check your inbox.`;
+                    errorMessageDiv.classList.remove('hidden');
+                })
+                .catch((error) => {
+                    errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
+                    errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
+                    errorMessageDiv.textContent = `Error: ${error.message}`;
+                    errorMessageDiv.classList.remove('hidden');
+                });
+        });
+
+        // --- SHOW/HIDE PASSWORD LOGIC ---
+        const togglePasswordBtn = document.getElementById('toggle-password-btn');
+        const passwordInput = document.getElementById('password');
+        const passwordIcon = document.getElementById('password-icon');
+
+        togglePasswordBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            passwordIcon.setAttribute('data-lucide', isPassword ? 'eye' : 'eye-off');
+            lucide.createIcons(); // Re-render the icon
+        });
+
+        // Initialize Lucide icons on page load
+        lucide.createIcons();
     </script>
 </body>
 

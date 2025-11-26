@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Action - NotWorking</title>
+    <link rel="icon" type="image/png" href="../src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <div class="min-h-screen flex flex-col items-center justify-center py-12">
+        <div class="max-w-md w-full mx-auto p-4">
+            <a href="../index.html" class="flex justify-center mb-8">
+                <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+            </a>
+
+            <div id="action-container" class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+                <!-- Content will be dynamically inserted here -->
+                <div id="loading-state" class="text-center">
+                    <i data-lucide="loader-2" class="w-8 h-8 text-slate-400 animate-spin mx-auto"></i>
+                    <p class="mt-2 text-slate-500">Verifying your request...</p>
+                </div>
+
+                <!-- Password Reset Form (hidden by default) -->
+                <div id="reset-password-state" class="hidden">
+                    <div class="text-center mb-8">
+                        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Reset Your Password</h1>
+                        <p class="text-slate-500 mt-1">Enter a new password for your account.</p>
+                    </div>
+                    <form id="reset-password-form" class="space-y-6">
+                        <div>
+                            <label for="new-password" class="block text-sm font-medium text-slate-700">New Password</label>
+                            <div class="mt-1">
+                                <input id="new-password" name="new-password" type="password" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
+                            </div>
+                        </div>
+                        <div id="form-status" class="hidden text-sm text-center p-3 rounded-md"></div>
+                        <div>
+                            <button type="submit"
+                                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-slate-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800">
+                                Save New Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Generic Message State (hidden by default) -->
+                <div id="message-state" class="hidden text-center">
+                    <h1 id="message-title" class="text-2xl font-bold text-slate-900"></h1>
+                    <p id="message-body" class="mt-2 text-slate-600"></p>
+                    <a href="login.html" id="message-link"
+                        class="mt-6 inline-block w-full py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-slate-900 hover:bg-black">
+                        Continue to Login
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from '../Data/firebase-client.js';
+        import {
+            applyActionCode,
+            checkActionCode,
+            confirmPasswordReset,
+            verifyPasswordResetCode
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        // --- UI Elements ---
+        const loadingState = document.getElementById('loading-state');
+        const resetPasswordState = document.getElementById('reset-password-state');
+        const messageState = document.getElementById('message-state');
+        const resetPasswordForm = document.getElementById('reset-password-form');
+        const formStatus = document.getElementById('form-status');
+
+        // --- Helper to show a final message ---
+        function showMessage(type, title, body, buttonText = 'Continue to Login') {
+            loadingState.classList.add('hidden');
+            resetPasswordState.classList.add('hidden');
+
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-body').textContent = body;
+            document.getElementById('message-link').textContent = buttonText;
+            
+            const icon = type === 'success' ? '<i data-lucide="check-circle-2" class="w-12 h-12 text-green-500 mx-auto mb-4"></i>' : '<i data-lucide="alert-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4"></i>';
+            document.getElementById('message-title').insertAdjacentHTML('beforebegin', icon);
+
+            messageState.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // --- Main Logic ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const actionCode = params.get('oobCode');
+
+            if (!mode || !actionCode) {
+                showMessage('error', 'Invalid Request', 'The link is missing required information. Please try again.');
+                return;
+            }
+
+            try {
+                switch (mode) {
+                    case 'resetPassword':
+                        await handlePasswordReset(actionCode);
+                        break;
+                    case 'verifyEmail':
+                        await handleVerifyEmail(actionCode);
+                        break;
+                    default:
+                        showMessage('error', 'Unsupported Action', 'This action is not supported.');
+                }
+            } catch (error) {
+                console.error("Action failed:", error);
+                showMessage('error', 'Action Failed', error.message || 'The link may be expired or invalid. Please try again.');
+            }
+        });
+
+        // --- Action Handlers ---
+        async function handlePasswordReset(actionCode) {
+            // Verify the code is valid
+            const email = await verifyPasswordResetCode(auth, actionCode);
+            
+            // Show the password reset form
+            loadingState.classList.add('hidden');
+            resetPasswordState.classList.remove('hidden');
+            
+            resetPasswordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById('new-password').value;
+
+                try {
+                    await confirmPasswordReset(auth, actionCode, newPassword);
+                    showMessage('success', 'Password Reset!', `Your password for ${email} has been successfully updated.`);
+                } catch (error) {
+                    formStatus.textContent = `Error: ${error.message}`;
+                    formStatus.classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                    formStatus.classList.add('bg-red-100', 'text-red-700');
+                }
+            });
+        }
+
+        async function handleVerifyEmail(actionCode) {
+            const actionCodeInfo = await checkActionCode(auth, actionCode);
+            await applyActionCode(auth, actionCode);
+            showMessage(
+                'success', 
+                'Email Verified!', 
+                `Thank you! Your email address ${actionCodeInfo.data.email} has been verified.`,
+                'Login to your Account'
+            );
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
