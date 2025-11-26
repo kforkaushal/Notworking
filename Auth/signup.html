@@ -94,13 +94,11 @@
     <!-- Firebase -->
     <script type="module">
         // Centralized clients
-        import { auth, db } from '../Data/firebase-client.js';
-        import supabase from '../Data/supabase-client.js';
+        import { auth } from '../Data/firebase-client.js';
+        import { handleEmailPasswordSignUp, handleGoogleAuth, displayError } from '../Data/auth-handler.js';
 
-        // Firebase functions
-        import { createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
+        // Firebase functions for auth state
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         // --- REDIRECT IF ALREADY LOGGED IN ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -114,100 +112,31 @@
         const signupForm = document.getElementById('signup-form');
         const errorMessageDiv = document.getElementById('error-message');
 
-        signupForm.addEventListener('submit', (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault(); // Prevent the form from submitting the default way
 
             const fullname = signupForm.fullname.value;
             const email = signupForm.email.value;
             const password = signupForm.password.value;
 
-            let firebaseUser; // To hold the user object
-
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(async (userCredential) => {
-                    // Signed up successfully, now update the Auth profile
-                    firebaseUser = userCredential.user;
-                    await updateProfile(firebaseUser, {
-                        displayName: fullname
-                    });
-
-                    // Create a document in Firestore
-                    const userDocRef = doc(db, "users", firebaseUser.uid);
-                    await setDoc(userDocRef, {
-                        displayName: fullname,
-                        email: firebaseUser.email,
-                        bio: "Thrilled to announce... nothing. Absolutely nothing. 🤡",
-                        skills: ["Sleeping all day", "Applying at 3AM", "Ghosted by HR"],
-                        experience: "No real experience yet — still collecting rejection letters 💌",
-                        badges: ["Master of excuses", "LinkedIn Scroller"],
-                        createdAt: serverTimestamp()
-                    });
-
-                    // ALSO, create a profile in Supabase
-                    const { error: supabaseError } = await supabase.from('profiles').insert({
-                        id: firebaseUser.uid, // Use Firebase UID as the ID
-                        full_name: fullname,
-                        email: firebaseUser.email
-                    });
-
-                    if (supabaseError) throw supabaseError; // If Supabase fails, throw error
-                })
-                .then(() => {
-                    console.log('User profile created in Auth and Firestore.');
-                    // Now redirect to the feed page
-                    window.location.href = "../feed.html";
-                })
-                .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    console.error('Signup Error:', errorCode, errorMessage);
-                    errorMessageDiv.textContent = `Error: ${errorMessage}`;
-                    errorMessageDiv.classList.remove('hidden');
-                });
+            try {
+                await handleEmailPasswordSignUp(fullname, email, password);
+            } catch (error) {
+                console.error('Signup Error:', error.code, error.message);
+                displayError(errorMessageDiv, `Error: ${error.message}`);
+            }
         });
 
         // --- GOOGLE SIGN-UP LOGIC ---
         const googleSignUpBtn = document.getElementById('google-signup-btn');
-        const provider = new GoogleAuthProvider();
 
-        googleSignUpBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider)
-                .then(async (result) => {
-                    const additionalInfo = getAdditionalUserInfo(result);
-                    const user = result.user;
-
-                    // If it's a new user, create their Firestore document
-                    if (additionalInfo.isNewUser) {
-                        console.log("New Google user, creating profiles in Firestore and Supabase...");
-                        // Create in Firestore
-                        const userDocRef = doc(db, "users", user.uid);
-                        await setDoc(userDocRef, {
-                            displayName: user.displayName,
-                            email: user.email,
-                            photoURL: user.photoURL,
-                            bio: "Just landed on NotWorking, ready to do nothing!",
-                            skills: ["Google Sign-In Pro"],
-                            experience: "Expert in clicking 'Allow' on popups.",
-                            badges: ["Early Adopter"],
-                            createdAt: serverTimestamp()
-                        });
-
-                        // ALSO, create a profile in Supabase
-                        const { error: supabaseError } = await supabase.from('profiles').insert({
-                            id: user.uid, // Use Firebase UID as the ID
-                            full_name: user.displayName,
-                            avatar_url: user.photoURL,
-                            email: user.email
-                        });
-                        if (supabaseError) throw supabaseError;
-                    }
-
-                    window.location.href = '../feed.html';
-                }).catch((error) => {
-                    console.error('Google Sign-In Error:', error);
-                    errorMessageDiv.textContent = `Error: ${error.message}`;
-                    errorMessageDiv.classList.remove('hidden');
-                });
+        googleSignUpBtn.addEventListener('click', async () => {
+            try {
+                await handleGoogleAuth();
+            } catch (error) {
+                console.error('Google Sign-In Error:', error);
+                displayError(errorMessageDiv, `Error: ${error.message}`);
+            }
         });
     </script>
 </body>
