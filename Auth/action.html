@@ -74,9 +74,7 @@
         import { auth } from '../Data/firebase-client.js';
         import {
             applyActionCode,
-            checkActionCode,
-            confirmPasswordReset,
-            verifyPasswordResetCode
+            checkActionCode
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
         // --- UI Elements ---
@@ -115,9 +113,6 @@
 
             try {
                 switch (mode) {
-                    case 'resetPassword':
-                        await handlePasswordReset(actionCode);
-                        break;
                     case 'verifyEmail':
                         await handleVerifyEmail(actionCode);
                         break;
@@ -131,29 +126,6 @@
         });
 
         // --- Action Handlers ---
-        async function handlePasswordReset(actionCode) {
-            // Verify the code is valid
-            const email = await verifyPasswordResetCode(auth, actionCode);
-            
-            // Show the password reset form
-            loadingState.classList.add('hidden');
-            resetPasswordState.classList.remove('hidden');
-            
-            resetPasswordForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newPassword = document.getElementById('new-password').value;
-
-                try {
-                    await confirmPasswordReset(auth, actionCode, newPassword);
-                    showMessage('success', 'Password Reset!', `Your password for ${email} has been successfully updated.`);
-                } catch (error) {
-                    formStatus.textContent = `Error: ${error.message}`;
-                    formStatus.classList.remove('hidden', 'bg-green-100', 'text-green-700');
-                    formStatus.classList.add('bg-red-100', 'text-red-700');
-                }
-            });
-        }
-
         async function handleVerifyEmail(actionCode) {
             const actionCodeInfo = await checkActionCode(auth, actionCode);
             await applyActionCode(auth, actionCode);

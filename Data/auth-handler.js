@@ -7,7 +7,10 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     getAdditionalUserInfo,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
@@ -37,6 +40,9 @@ export async function handleEmailPasswordSignUp(fullname, email, password) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
+    // Set Supabase session first to satisfy RLS policies
+    await setSupabaseSession(firebaseUser);
+
     // Update Firebase Auth profile
     await updateProfile(firebaseUser, { displayName: fullname });
 
@@ -60,8 +66,6 @@ export async function handleEmailPasswordSignUp(fullname, email, password) {
     });
     if (supabaseError) throw supabaseError;
 
-    // Set Supabase session and redirect
-    await setSupabaseSession(firebaseUser);
     window.location.href = '../feed.html';
 }
 
@@ -69,13 +73,17 @@ export async function handleEmailPasswordSignUp(fullname, email, password) {
  * Handles user login with email and password.
  * @param {string} email
  * @param {string} password
+ * @param {boolean} rememberMe
  */
-export async function handleEmailPasswordLogin(email, password) {
+export async function handleEmailPasswordLogin(email, password, rememberMe) {
+    const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, persistence);
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    
-    // The onIdTokenChanged listener in feed.html will handle the session and redirect.
-    // For direct navigation after login, we can do it here too.
+
+    // Set the Supabase session immediately after login to prevent race conditions on the feed page.
     await setSupabaseSession(userCredential.user);
+
     window.location.href = '../feed.html';
 }
 
@@ -83,11 +91,17 @@ export async function handleEmailPasswordLogin(email, password) {
  * Handles Google Sign-In for both login and sign-up.
  */
 export async function handleGoogleAuth() {
+    // Ensure the session persists across browser sessions for Google users.
+    await setPersistence(auth, browserLocalPersistence);
+
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     
     const additionalInfo = getAdditionalUserInfo(result);
     const user = result.user;
+
+    // Set Supabase session first to satisfy RLS policies, especially for new users
+    await setSupabaseSession(user);
 
     // If it's a new user, create their profiles
     if (additionalInfo.isNewUser) {
@@ -116,8 +130,6 @@ export async function handleGoogleAuth() {
         if (supabaseError) throw supabaseError;
     }
 
-    // Set Supabase session and redirect
-    await setSupabaseSession(user);
     window.location.href = '../feed.html';
 }
 
@@ -129,6 +141,29 @@ export async function handlePasswordReset(email) {
     await sendPasswordResetEmail(auth, email);
 }
 
+/**
+ * Uploads a file to a specific Supabase Storage bucket and path.
+ * @param {string} bucket - The Supabase Storage bucket name.
+ * @param {string} path - The path/filename for the new file.
+ * @param {File} file - The file object to upload.
+ * @returns {Promise<string>} The public URL of the uploaded file.
+ */
+export async function uploadFile(bucket, path, file) {
+    const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+            cacheControl: '3600',
+            upsert: true // Overwrite file if it exists
+        });
+
+    if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        throw uploadError;
+    }
+
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data.publicUrl;
+}
 
 /**
  * Displays an error message in a specified element.

@@ -53,10 +53,12 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end">
-                        <div class="text-sm">
-                            <a href="#" id="forgot-password-link" class="font-medium text-brand-blue hover:text-brand-blue/80">Forgot your password?</a>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded">
+                            <label for="remember-me" class="ml-2 block text-sm text-slate-900">Remember me</label>
                         </div>
+                        <!-- "Forgot your password?" link was here and has been removed. -->
                     </div>
 
                     <!-- Error Message -->
@@ -99,26 +101,30 @@
     <script type="module">
         // Centralized clients
         import { auth } from '../Data/firebase-client.js';
-        import { handleEmailPasswordLogin, handleGoogleAuth, handlePasswordReset, displayError } from '../Data/auth-handler.js';
+        import supabase from '../Data/supabase-client.js';
+        import { handleEmailPasswordLogin, handleGoogleAuth, displayError } from '../Data/auth-handler.js';
 
         // Firebase functions
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-
-
         // --- REDIRECT IF ALREADY LOGGED IN ---
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // User is signed in, redirect to feed.
-                console.log('User already logged in. Redirecting to feed...');
-                window.location.href = '../feed.html';
+                console.log('User already logged in. Verifying Supabase session before redirect...');
+                try {
+                    const token = await user.getIdToken();
+                    const { error } = await supabase.auth.setSession({ access_token: token });
+                    if (error) throw error;
+                    window.location.href = '/feed.html';
+                } catch (error) {
+                    console.error("Failed to set Supabase session on login page, user will stay here.", error);
+                }
             }
         });
 
         // --- LOGIN LOGIC ---
         const loginForm = document.getElementById('login-form');
         const errorMessageDiv = document.getElementById('error-message');
-        const forgotPasswordLink = document.getElementById('forgot-password-link');
         const googleSignInBtn = document.getElementById('google-signin-btn');
 
         loginForm.addEventListener('submit', async (e) => {
@@ -126,9 +132,10 @@
 
             const email = loginForm.email.value;
             const password = loginForm.password.value;
+            const rememberMe = document.getElementById('remember-me').checked;
 
             try {
-                await handleEmailPasswordLogin(email, password);
+                await handleEmailPasswordLogin(email, password, rememberMe);
             } catch (error) {
                 const errorMessage = "Invalid email or password. Please try again.";
                 console.error('Login Error:', error.code, error.message);
@@ -144,29 +151,6 @@
                 await handleGoogleAuth();
             } catch (error) {
                 console.error('Google Sign-In Error:', error);
-                errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
-                errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
-                displayError(errorMessageDiv, `Error: ${error.message}`);
-            }
-        });
-
-        // --- FORGOT PASSWORD LOGIC ---
-        forgotPasswordLink.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const email = loginForm.email.value;
-            if (!email) {
-                errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
-                errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
-                displayError(errorMessageDiv, "Please enter your email address in the email field first.");
-                return;
-            }
-
-            try {
-                await handlePasswordReset(email);
-                errorMessageDiv.classList.remove('bg-red-100', 'text-red-600');
-                errorMessageDiv.classList.add('bg-green-100', 'text-green-600');
-                displayError(errorMessageDiv, `Password reset link sent to ${email}. Please check your inbox.`);
-            } catch (error) {
                 errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
                 errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
                 displayError(errorMessageDiv, `Error: ${error.message}`);

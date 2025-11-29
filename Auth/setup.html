@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Your Profile - NotWorking</title>
+    <link rel="icon" type="image/png" href="../src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <div class="min-h-screen flex flex-col items-center justify-center py-12">
+        <div class="max-w-2xl w-full mx-auto p-4">
+            <a href="../index.html" class="flex justify-center mb-8">
+                <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+            </a>
+
+            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">One Last Step!</h1>
+                    <p class="text-slate-500 mt-1">Set up your profile to join the void.</p>
+                </div>
+
+                <form id="setup-form" class="space-y-6">
+                    <!-- Avatar -->
+                    <div class="flex flex-col items-center">
+                        <img id="avatar-preview" src="../src/assets/avatar.png" class="w-24 h-24 rounded-full object-cover mb-4" alt="Avatar preview">
+                        <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg, image/gif">
+                        <button type="button" id="change-photo-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-full hover:bg-slate-50">
+                            Change Photo
+                        </button>
+                    </div>
+
+                    <!-- Text Inputs -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="fullname" class="block text-sm font-medium text-slate-700">Full Name</label>
+                            <input id="fullname" name="fullname" type="text" required class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-slate-700">Username</label>
+                            <input id="username" name="username" type="text" required pattern="^[a-zA-Z0-9_]{3,15}$" title="3-15 characters, letters, numbers, and underscores only." class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="bio" class="block text-sm font-medium text-slate-700">Bio</label>
+                        <textarea id="bio" name="bio" rows="3" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="experience" class="block text-sm font-medium text-slate-700">Experience</label>
+                        <input id="experience" name="experience" type="text" placeholder="e.g., Chief Relaxation Officer at Home Inc." class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                    </div>
+
+                    <div>
+                        <label for="skills" class="block text-sm font-medium text-slate-700">Skills (comma-separated)</label>
+                        <input id="skills" name="skills" type="text" placeholder="e.g., Binge-Watching, Advanced Napping" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                    </div>
+
+                    <div>
+                        <label for="dob" class="block text-sm font-medium text-slate-700">Date of Birth</label>
+                        <input id="dob" name="dob" type="date" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-medium text-slate-700">Social Links (Optional)</h3>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="instagram" class="w-5 h-5 text-slate-400"></i>
+                            <input id="instagram" name="instagram" type="text" placeholder="Instagram username" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="linkedin" class="w-5 h-5 text-slate-400"></i>
+                            <input id="linkedin" name="linkedin" type="text" placeholder="LinkedIn profile URL" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="facebook" class="w-5 h-5 text-slate-400"></i>
+                            <input id="facebook" name="facebook" type="text" placeholder="Facebook profile URL" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="hidden text-sm text-red-600 bg-red-100 p-3 rounded-md text-center"></div>
+
+                    <div>
+                        <button type="submit" id="submit-btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600">
+                            Complete Setup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from '../Data/firebase-client.js';
+        import supabase from '../Data/supabase-client.js';
+        import { uploadFile } from '../Data/auth-handler.js';
+        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        const setupForm = document.getElementById('setup-form');
+        const errorMessageDiv = document.getElementById('error-message');
+        const submitBtn = document.getElementById('submit-btn');
+        let currentUser = null;
+        let newAvatarFile = null;
+
+        // Check auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                // When the user is authenticated with Firebase,
+                // get the JWT and set it for Supabase.
+                user.getIdToken().then(token => {
+                    supabase.auth.setSession({
+                        access_token: token,
+                        refresh_token: user.refreshToken
+                    });
+                });
+                // Pre-fill name from Google/Firebase auth if available
+                document.getElementById('fullname').value = user.displayName || '';
+            } else {
+                // Not logged in, redirect to login
+                window.location.href = '/Auth/login.html';
+            }
+        });
+
+        // Avatar Upload Logic
+        document.getElementById('change-photo-btn').addEventListener('click', () => {
+            document.getElementById('avatar-file-input').click();
+        });
+
+        document.getElementById('avatar-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                newAvatarFile = file;
+                document.getElementById('avatar-preview').src = URL.createObjectURL(file);
+            }
+        });
+
+        // Form Submission
+        setupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Saving...";
+
+            const formData = new FormData(setupForm);
+            const formProps = Object.fromEntries(formData);
+
+            try {
+                let avatarUrl = currentUser.photoURL || `..${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/src/assets/avatar.png`;
+                const newUsername = formProps.username.trim();
+
+                // 0. Check if username is unique before doing anything else
+                const { data: existingUser, error: checkError } = await supabase
+                    .from('profiles')
+                    .select('username')
+                    .eq('username', newUsername)
+                    .single();
+
+                if (existingUser) {
+                    throw new Error('That username is already taken. Please choose another.');
+                }
+                if (checkError && checkError.code !== 'PGRST116') throw checkError; // PGRST116 means no rows found, which is good.
+
+                // 1. Upload avatar if a new one was selected
+                if (newAvatarFile) {
+                    const filePath = `avatars/${currentUser.uid}/${newAvatarFile.name}`;
+                    avatarUrl = await uploadFile('media', filePath, newAvatarFile);
+                }
+
+                // 2. Update Firebase Auth profile (name and photo)
+                await updateProfile(currentUser, {
+                    displayName: formProps.fullname.trim(),
+                    photoURL: avatarUrl
+                });
+
+                // 3. Prepare data for Supabase
+                const socialLinks = {
+                    instagram: formProps.instagram,
+                    linkedin: formProps.linkedin,
+                    facebook: formProps.facebook,
+                };
+
+                const profileData = {
+                    id: currentUser.uid,
+                    full_name: formProps.fullname.trim(),
+                    username: newUsername,
+                    bio: formProps.bio,
+                    experience: formProps.experience,
+                    skills: formProps.skills.split(',').map(s => s.trim()).filter(Boolean),
+                    dob: formProps.dob || null,
+                    avatar_url: avatarUrl,
+                    social_links: socialLinks,
+                    updated_at: new Date().toISOString()
+                };
+
+                // 4. Upsert profile data in Supabase
+                const { error } = await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
+                if (error) throw error;
+
+                // 5. Redirect to profile page
+                window.location.href = `/profile.html`;
+
+            } catch (error) {
+                console.error("Setup Error:", error);
+                errorMessageDiv.textContent = `Error: ${error.message}`;
+                errorMessageDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Complete Setup";
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

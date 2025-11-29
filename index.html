@@ -49,7 +49,8 @@
 
             <!-- CTA -->
             <div class="flex items-center gap-4">
-                <a id="login-btn" href="Auth/login.html" class="hidden md:block text-sm font-medium text-slate-600 hover:text-brand-blue">Log In</a>
+                <a id="login-btn" href="Auth/login.html"
+                    class="hidden md:block text-sm font-medium text-slate-600 hover:text-brand-blue">Log In</a>
                 <a id="signup-btn" href="Auth/signup.html"
                     class="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95">
                     <span id="cta-text">Join the Void</span>
@@ -351,18 +352,18 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         // TODO: Add SDKs for Firebase products that you want to use
         // https://firebase.google.com/docs/web/setup#available-libraries
-      
+
         // Your web app's Firebase configuration
         const firebaseConfig = {
-          apiKey: "AIzaSyBvAb0at9YH8WoaaO5DIRbYpn3ydEqQRCQ",
-          authDomain: "notworking-59e69.firebaseapp.com",
-          projectId: "notworking-59e69",
-          storageBucket: "notworking-59e69.appspot.com",
-          messagingSenderId: "784996834340",
-          appId: "1:784996834340:web:06b3a78bee4ce8a348ccb1",
-          measurementId: "G-LGV0PY71ZM"
+            apiKey: "AIzaSyDJkwj31bOO08cxsYlHPqUvi9JChFr_cPY",
+            authDomain: "we-notworking.firebaseapp.com",
+            projectId: "we-notworking",
+            storageBucket: "we-notworking.appspot.com",
+            messagingSenderId: "768738291896",
+            appId: "1:768738291896:web:c55d1b896c7946bf5c444d",
+            measurementId: "G-5VTB19KMZJ"
         };
-      
+
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);

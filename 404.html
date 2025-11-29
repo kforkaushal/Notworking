@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
+
+        .font-sans {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <div class="min-h-screen flex flex-col items-center justify-center text-center p-4">
+        
+        <a href="index.html" class="mb-8">
+            <img src="src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
+        </a>
+
+        <div class="bg-white p-10 rounded-2xl shadow-lg border border-slate-200 max-w-lg w-full">
+            <div class="text-red-500 mb-4">
+                <i data-lucide="file-question" class="w-20 h-20 mx-auto"></i>
+            </div>
+
+            <h1 class="text-6xl font-extrabold tracking-tighter text-slate-900">404</h1>
+            <h2 class="text-2xl font-bold mt-2">This Page Got Laid Off</h2>
+            
+            <p class="text-slate-500 mt-4 max-w-sm mx-auto">
+                We searched everywhere, but it seems this page is currently "exploring new opportunities". It might have been deleted, or maybe it's just taking a well-deserved, indefinite break.
+            </p>
+
+            <div class="mt-8">
+                <a href="/index.html"
+                    class="inline-flex justify-center py-3 px-6 border border-transparent rounded-full shadow-sm text-sm font-bold text-white bg-slate-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800 transition-all hover:-translate-y-0.5">
+                    Return to Homepage
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

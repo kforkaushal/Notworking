@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,304 +7,412 @@
     <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* bg-slate-100 */
-            color: #0f172a; /* text-slate-900 */
-        }
-        /* Note: The rest of the styling from the original style.css should be converted to TailwindCSS or kept in a separate CSS file if preferred. */
-    </style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap'); body { font-family: 'Inter', sans-serif; }</style>
 </head>
-
 <body class="bg-slate-100 text-slate-900 font-sans antialiased">
 
-    <!-- ========================== 
-         NAVBAR (Consistent with feed.html)
-    =========================== -->
     <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <!-- Left Nav -->
+            <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
             <div class="flex items-center gap-4">
-                <a href="index.html">
-                    <img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" />
-                </a>
-            </div>
-
-            <!-- Right Nav -->
-            <div class="flex items-center gap-2 sm:gap-4 text-slate-500">
-                <a href="feed.html" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue" title="Home">
-                    <i data-lucide="home" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Home</span>
-                </a>
-                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue" title="Groups">
-                    <i data-lucide="users-2" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Groups</span>
-                </a>
-                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue" title="Messaging">
-                    <i data-lucide="message-square" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Messaging</span>
-                </a>
-                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue relative" title="Notifications">
-                    <i data-lucide="bell" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Notifications</span>
-                </a>
-                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
-                <!-- Profile Dropdown -->
-                <div class="relative group">
-                    <a href="profile.html" class="flex flex-col items-center gap-0.5 px-2 text-brand-blue" title="Profile">
-                        <img id="nav-profile-img" src="src/assets/avatar-placeholder.png" class="w-6 h-6 rounded-full" />
-                        <span id="nav-profile-name" class="text-xs font-bold hidden sm:block">Me</span>
-                    </a>
-                </div>
+                <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
+                <img id="nav-profile-img" src="src/assets/avatar-placeholder.png" class="w-8 h-8 rounded-full border border-slate-200" />
             </div>
         </div>
     </nav>
 
-    <!-- Profile Container -->
     <main class="max-w-4xl mx-auto px-4 py-8">
-        <!-- Banner Section -->
-        <div class="h-48 bg-slate-200 rounded-lg"></div>
-
-        <!-- Profile Card -->
-        <div class="bg-white rounded-lg p-6 border border-slate-200 -mt-20 text-center">
-            <img id="profile-image" src="src/assets/avatar-placeholder.png" alt="Profile Picture" class="w-32 h-32 rounded-full mx-auto border-4 border-white -mt-16">
+        <div class="h-48 bg-slate-800 rounded-t-lg relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-700 opacity-80"></div>
+        </div>
+        
+        <div class="bg-white rounded-b-lg p-6 border-x border-b border-slate-200 -mt-px text-center shadow-sm">
+            <div class="relative w-32 h-32 mx-auto -mt-16">
+                <img id="profile-image" src="src/assets/avatar-placeholder.png" class="w-32 h-32 rounded-full border-4 border-white object-cover bg-white">
+            </div>
             <h2 id="profile-name" class="text-2xl font-bold mt-4">Loading...</h2>
-            <p class="text-sm text-slate-500">Currently: <span class="font-bold text-red-500">NotWorking 😭</span></p>
-            <p id="profile-bio" class="mt-2 text-slate-600 italic">Loading bio...</p>
+            <p id="profile-username" class="text-md text-slate-400">@...</p>
+            <p class="text-sm text-red-500 font-bold mt-1">NotWorking 😭</p>
+            <p id="profile-bio" class="mt-4 text-slate-600 max-w-lg mx-auto">...</p>
+            
+            <div class="flex justify-center gap-3 mt-6">
+                <button id="edit-profile-btn" class="hidden px-6 py-2 bg-slate-900 text-white rounded-full font-bold hover:bg-black transition">Edit Profile</button>
+                <button id="follow-btn" class="hidden px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition">Follow</button>
+                <button id="share-btn" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-full font-bold hover:bg-slate-50 transition"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+            </div>
 
-            <button id="edit-profile-btn" class="mt-4 bg-slate-900 hover:bg-black text-white text-sm font-bold py-2 px-4 rounded-full transition-all">Edit Profile</button>
-
-            <div class="flex justify-center gap-6 mt-6 text-slate-600">
-                <p><strong class="text-slate-900">35</strong> Followers</p>
-                <p><strong class="text-slate-900">10</strong> Following</p>
+            <div class="flex justify-center gap-8 mt-6 border-t border-slate-100 pt-6">
+                <div class="text-center">
+                    <span id="posts-count" class="block text-xl font-bold text-slate-900">0</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wide">Posts</span>
+                </div>
+                <div class="text-center">
+                    <span id="followers-count" class="block text-xl font-bold text-slate-900">0</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wide">Followers</span>
+                </div>
+                <div class="text-center">
+                    <span id="following-count" class="block text-xl font-bold text-slate-900">0</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wide">Following</span>
+                </div>
             </div>
         </div>
 
-        <!-- Sections -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            <!-- Skills Box -->
-            <div class="bg-white rounded-lg p-6 border border-slate-200">
-                <h3 class="text-lg font-bold mb-4">Skills</h3>
-                <div id="skills-list" class="flex flex-wrap gap-2">
-                    <span class="chip animate-pulse bg-slate-200 w-24 h-6 rounded-full"></span>
-                    <span class="chip animate-pulse bg-slate-200 w-32 h-6 rounded-full"></span>
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg border border-slate-200">
+                    <h3 class="font-bold mb-3">About</h3>
+                    <div id="experience-text" class="text-sm text-slate-600 mb-4">No experience added.</div>
+                    <div id="skills-list" class="flex flex-wrap gap-2"></div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg border border-slate-200">
+                    <h3 class="font-bold mb-3">Badges</h3>
+                    <div id="badges-list" class="flex flex-wrap gap-2"></div>
                 </div>
             </div>
 
-            <!-- Experience -->
-            <div class="bg-white rounded-lg p-6 border border-slate-200">
-                <h3 class="text-lg font-bold mb-4">Experience</h3>
-                <p id="experience-text" class="text-slate-600">Loading experience...</p>
-            </div>
-
-            <!-- Badges -->
-            <div class="bg-white rounded-lg p-6 border border-slate-200 md:col-span-2">
-                <h3 class="text-lg font-bold mb-4">Badges</h3>
-                <div id="badges-list" class="flex flex-wrap gap-2">
-                    <span class="chip animate-pulse bg-slate-200 w-28 h-6 rounded-full"></span>
+            <div class="md:col-span-2">
+                <h3 class="font-bold text-xl mb-4 px-2">Recent Activity</h3>
+                <div id="user-posts-container" class="space-y-6">
+                    <div class="text-center py-10 text-slate-400">Loading posts...</div>
                 </div>
             </div>
-
         </div>
-
     </main>
 
-    <!-- ========================== 
-         EDIT PROFILE MODAL
-    =========================== -->
-    <div id="edit-profile-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4">
-            <div class="p-6 border-b border-slate-200">
-                <h3 class="text-xl font-bold">Edit Your Profile</h3>
-            </div>
-            <form id="edit-profile-form">
-                <div class="p-6 space-y-4">
-                    <div>
-                        <label for="edit-name" class="block text-sm font-medium text-slate-700">Full Name</label>
-                        <div class="mt-1">
-                            <input id="edit-name" name="name" type="text" required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="edit-bio" class="block text-sm font-medium text-slate-700">Bio</label>
-                        <div class="mt-1">
-                            <textarea id="edit-bio" name="bio" rows="3"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"></textarea>
-                        </div>
-                    </div>
-                    <div id="modal-error-message" class="hidden text-sm text-red-600 text-center"></div>
+    <div id="edit-profile-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl w-full max-w-lg p-6 m-4 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
+            <form id="edit-profile-form" class="space-y-4">
+                <input id="edit-name" type="text" placeholder="Full Name" class="w-full p-2 border rounded" required>
+                <input id="edit-username" type="text" placeholder="Username (unique)" class="w-full p-2 border rounded" required>
+                <textarea id="edit-bio" placeholder="Bio" class="w-full p-2 border rounded" rows="3"></textarea>
+                <input id="edit-experience" type="text" placeholder="Experience" class="w-full p-2 border rounded">
+                <input id="edit-skills" type="text" placeholder="Skills (comma separated)" class="w-full p-2 border rounded">
+                <div class="flex items-center gap-4">
+                    <img id="modal-avatar-preview" src="" class="w-12 h-12 rounded-full bg-slate-200">
+                    <button type="button" id="change-photo-btn" class="text-sm text-blue-600 font-bold">Change Photo</button>
+                    <input type="file" id="avatar-file-input" class="hidden">
                 </div>
-                <div class="p-4 bg-slate-50 rounded-b-xl flex justify-end gap-4">
-                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-full hover:bg-slate-50">Cancel</button>
-                    <button type="submit" id="save-changes-btn" class="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-full">Save Changes</button>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-slate-600">Cancel</button>
+                    <button type="submit" id="save-changes-btn" class="px-4 py-2 bg-slate-900 text-white rounded">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
+<script type="module">
+    import { auth } from '../Data/firebase-client.js';
+    import supabase from '../Data/supabase-client.js';
+    import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    <!-- Supabase & Auth Script -->
-    <script type="module">
-        lucide.createIcons(); // Initialize icons
+    let currentUser = null;
+    let viewedProfileId = null; 
+    let isOwner = false;
 
-        // Centralized clients
-        import { auth } from '../Data/firebase-client.js';
-        import supabase from '../Data/supabase-client.js';
+    // --- FETCH & DISPLAY USER POSTS ---
+    async function fetchUserPosts(userId) {
+        const container = document.getElementById('user-posts-container');
+        container.innerHTML = '<div class="text-center py-8"><i data-lucide="loader-2" class="animate-spin w-8 h-8 mx-auto text-slate-400"></i></div>';
+        lucide.createIcons();
 
-        // Firebase functions
-        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        // Fetch posts ONLY for this user
+        const { data: posts, error } = await supabase.from('posts')
+            .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
 
-        let currentUser = null;
-        let userProfile = null;
+        container.innerHTML = '';
+        
+        // Update Post Count Stat
+        document.getElementById('posts-count').textContent = posts?.length || 0;
 
-        // --- UI UPDATE FUNCTION ---
-        const updateUserProfile = async (user) => {
-            currentUser = user; // Store user for later use
+        if (!posts || posts.length === 0) {
+            container.innerHTML = `
+                <div class="bg-white p-8 rounded-lg border border-slate-200 text-center">
+                    <p class="text-slate-500">This user hasn't posted anything yet.</p>
+                    ${isOwner ? '<a href="feed.html" class="text-blue-500 font-bold mt-2 inline-block">Create your first post</a>' : ''}
+                </div>`;
+            return;
+        }
 
-            // 1. Update from Auth (Name, Photo, Email)
-            const displayName = user.displayName || user.email.split('@')[0];
-            const photoURL = user.photoURL || `https://i.pravatar.cc/200?u=${user.uid}`;
-
-            // Nav Bar
-            const navProfileImg = document.getElementById('nav-profile-img');
-            const navProfileName = document.getElementById('nav-profile-name');
-            if (navProfileImg) navProfileImg.src = user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`; // Use consistent avatar
-            if (navProfileName) navProfileName.textContent = (displayName || "Me").split(' ')[0];
-
-            // Profile Page Content
-            document.getElementById('profile-image').src = photoURL;
-            document.getElementById('profile-name').textContent = displayName;
-
-            // 2. Update from Supabase (Bio, Skills, etc.)
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.uid)
-                .single();
-
-            if (error) console.error('Error fetching profile:', error);
+        posts.forEach(post => {
+            // Reuse the card logic (simplified for inline script)
+            const div = document.createElement('div');
+            div.className = "bg-white p-5 rounded-lg border border-slate-200 mb-4 shadow-sm";
             
-            if (profile) {
-                userProfile = profile; // Store for edit modal
-                document.getElementById('profile-bio').textContent = profile.bio || 'No bio yet.';
-                document.getElementById('experience-text').textContent = profile.experience || 'No experience listed.';
-                
-                const skillsList = document.getElementById('skills-list');
-                skillsList.innerHTML = profile.skills?.length ? profile.skills.map(skill => `<span class="bg-slate-200 text-slate-700 text-sm font-medium px-3 py-1 rounded-full">${skill}</span>`).join('') : '<span class="text-sm text-slate-500">Edit profile to add skills.</span>';
-                
-                const badgesList = document.getElementById('badges-list');
-                badgesList.innerHTML = profile.badges?.length ? profile.badges.map(badge => `<span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">${badge}</span>`).join('') : '<span class="text-sm text-slate-500">No badges earned yet.</span>';
-            } else {
-                // Gracefully handle case where no Supabase profile exists for the Firebase user
-                console.log("No Supabase profile found for this user. Displaying default text.");
-                document.getElementById('profile-bio').textContent = 'Welcome! Edit your profile to add a bio.';
-                document.getElementById('experience-text').textContent = 'No experience listed yet.';
+            let mediaHTML = '';
+            if(post.media_url) {
+                mediaHTML = post.media_type === 'video' 
+                ? `<video controls src="${post.media_url}" class="mt-3 rounded w-full max-h-80 object-cover"></video>`
+                : `<img src="${post.media_url}" class="mt-3 rounded w-full max-h-80 object-cover">`;
             }
-        };
 
-        // --- AUTH STATE OBSERVER ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // User is signed in
-                console.log('User is logged in, displaying profile:', user);
+            // Delete button for owner
+            const deleteBtn = isOwner ? `
+                <button class="delete-post-btn text-slate-400 hover:text-red-500 float-right" data-id="${post.id}">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>` : '';
 
-                // Set Supabase auth with Firebase's JWT before fetching profile data
-                user.getIdToken().then(token => {
-                    supabase.auth.setSession({
-                        access_token: token,
-                        refresh_token: user.refreshToken
-                    });
-                    // Now that Supabase is authenticated, fetch the user profile
-                    updateUserProfile(user);
-                }).catch(error => {
-                    console.error('Error getting Firebase token for Supabase:', error);
-                });
-            } else {
-                // User is signed out, redirect to login
-                console.log('User is not logged in. Redirecting...');
-                window.location.href = 'Auth/login.html';
-            }
+            div.innerHTML = `
+                ${deleteBtn}
+                <div class="flex gap-3">
+                    <img src="${post.profiles.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-10 h-10 rounded-full object-cover">
+                    <div>
+                        <p class="font-bold text-sm">${post.profiles.full_name}</p>
+                        <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <p class="mt-2 text-slate-800">${post.content || ''}</p>
+                ${mediaHTML}
+                <div class="mt-3 pt-3 border-t border-slate-100 flex gap-4 text-xs text-slate-500 font-bold">
+                    <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3"></i> ${post.likes[0]?.count || 0}</span>
+                    <span class="flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i> ${post.comments[0]?.count || 0}</span>
+                </div>
+            `;
+            container.appendChild(div);
         });
+        lucide.createIcons();
 
-        // --- EDIT PROFILE MODAL LOGIC ---
-        const modal = document.getElementById('edit-profile-modal');
-        const editProfileBtn = document.getElementById('edit-profile-btn');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const editProfileForm = document.getElementById('edit-profile-form');
-        const saveChangesBtn = document.getElementById('save-changes-btn');
-        const modalErrorDiv = document.getElementById('modal-error-message');
+        // Attach delete listeners
+        if(isOwner) {
+            document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    if(!confirm("Delete this post?")) return;
+                    const { error } = await supabase.from('posts').delete().eq('id', btn.dataset.id);
+                    if(!error) btn.closest('div').remove();
+                });
+            });
+        }
+    }
 
-        const openModal = () => {
-            if (!currentUser) return;
+    // --- LOAD PROFILE ---
+    async function loadProfile(usernameParam) {
+        let query = supabase.from('profiles').select('*');
+        
+        if (usernameParam) {
+            query = query.eq('username', usernameParam);
+        } else if (currentUser) {
+            query = query.eq('id', currentUser.uid);
+        } else {
+            return window.location.href = 'Auth/login.html';
+        }
 
-            // Populate form with current data
-            document.getElementById('edit-name').value = currentUser.displayName || '';
-            document.getElementById('edit-bio').value = userProfile?.bio || '';
+        const { data: profile, error } = await query.single();
 
-            // Show modal
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        if (error || !profile) {
+            document.getElementById('profile-name').textContent = "User not found";
+            return;
+        }
+
+        viewedProfileId = profile.id;
+        isOwner = currentUser && currentUser.uid === profile.id;
+
+        // UI Updates
+        document.getElementById('profile-name').textContent = profile.full_name;
+        document.getElementById('profile-username').textContent = `@${profile.username || 'user'}`;
+        document.getElementById('profile-bio').textContent = profile.bio || "No bio yet.";
+        document.getElementById('profile-image').src = profile.avatar_url || 'src/assets/avatar-placeholder.png';
+        document.getElementById('experience-text').textContent = profile.experience || "No experience.";
+        
+        // Render Lists
+        const renderTags = (id, tags, color) => {
+            const el = document.getElementById(id);
+            el.innerHTML = tags?.length ? tags.map(t => `<span class="${color} px-2 py-1 rounded text-xs font-bold">${t}</span>`).join('') : '<span class="text-xs text-slate-400">None</span>';
         };
+        renderTags('skills-list', profile.skills, 'bg-slate-200 text-slate-700');
+        renderTags('badges-list', profile.badges, 'bg-yellow-100 text-yellow-700');
 
-        const closeModal = () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            modalErrorDiv.classList.add('hidden'); // Hide any previous errors
-        };
+        // Toggle Buttons
+        if (isOwner) {
+            document.getElementById('edit-profile-btn').classList.remove('hidden');
+            document.getElementById('follow-btn').classList.add('hidden');
+        } else {
+            document.getElementById('edit-profile-btn').classList.add('hidden');
+            document.getElementById('follow-btn').classList.remove('hidden');
+            checkFollowStatus();
+        }
 
-        const handleProfileUpdate = async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
+        // LOAD POSTS FOR THIS USER
+        fetchUserPosts(viewedProfileId);
+        fetchFollowStats(viewedProfileId);
+    }
 
-            saveChangesBtn.disabled = true;
-            saveChangesBtn.textContent = 'Saving...';
-            modalErrorDiv.classList.add('hidden');
-
-            const newName = document.getElementById('edit-name').value;
-            const newBio = document.getElementById('edit-bio').value;
-
-            try {
-                // 1. Update Firebase Auth display name
-                await updateProfile(currentUser, { displayName: newName });
-
-                // 2. Update Supabase profile bio
-                const { error: supabaseError } = await supabase
-                    .from('profiles')
-                    .update({ 
-                        bio: newBio,
-                        full_name: newName, // Also update full_name in Supabase for consistency
-                        updated_at: new Date().toISOString() 
-                    })
-                    .eq('id', currentUser.uid);
-
-                if (supabaseError) throw supabaseError;
-
-                // 3. Manually update UI to reflect changes immediately
-                document.getElementById('profile-name').textContent = newName;
-                document.getElementById('profile-bio').textContent = newBio;
-                if(userProfile) userProfile.bio = newBio; // Update local state
-
-                closeModal();
-
-            } catch (error) {
-                console.error("Error updating profile:", error);
-                modalErrorDiv.textContent = `Error: ${error.message}`;
-                modalErrorDiv.classList.remove('hidden');
-            } finally {
-                saveChangesBtn.disabled = false;
-                saveChangesBtn.textContent = 'Save Changes';
+    // --- FOLLOW LOGIC ---
+    async function checkFollowStatus() {
+        if(!currentUser || isOwner) return;
+        const btn = document.getElementById('follow-btn');
+        const { data } = await supabase.from('followers').select('id').eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId).single();
+        
+        if (data) {
+            btn.textContent = "Unfollow";
+            btn.classList.add('bg-slate-500');
+        } else {
+            btn.textContent = "Follow";
+            btn.classList.remove('bg-slate-500');
+        }
+        
+        btn.onclick = async () => {
+            if (btn.textContent === "Follow") {
+                await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: viewedProfileId });
+                btn.textContent = "Unfollow";
+                btn.classList.add('bg-slate-500');
+            } else {
+                await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId);
+                btn.textContent = "Follow";
+                btn.classList.remove('bg-slate-500');
             }
+            fetchFollowStats(viewedProfileId);
         };
+    }
 
-        editProfileBtn.addEventListener('click', openModal);
-        cancelEditBtn.addEventListener('click', closeModal);
-        editProfileForm.addEventListener('submit', handleProfileUpdate);
-    </script>
+    async function fetchFollowStats(id) {
+        const { count: followers } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('following_id', id);
+        const { count: following } = await supabase.from('followers').select('*', { count: 'exact', head: true }).eq('follower_id', id);
+        document.getElementById('followers-count').textContent = followers || 0;
+        document.getElementById('following-count').textContent = following || 0;
+    }
+
+    // --- HELPER: UPLOAD AVATAR ---
+    async function uploadAvatarFile(file, userId) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `avatar-${Date.now()}.${fileExt}`; // Unique name
+        const filePath = `avatars/${userId}/${fileName}`;
+
+        // Upload to 'media' bucket
+        const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file);
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+        return data.publicUrl;
+    }
+
+    // --- EDIT PROFILE LOGIC ---
+    const modal = document.getElementById('edit-profile-modal');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+    const avatarPreview = document.getElementById('modal-avatar-preview');
+    let newAvatarFile = null;
+
+    document.getElementById('edit-profile-btn').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('edit-name').value = document.getElementById('profile-name').textContent;
+        // You can populate other fields similarly if needed
+        avatarPreview.src = document.getElementById('profile-image').src;
+    });
+
+    document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    });
+
+    document.getElementById('change-photo-btn').addEventListener('click', () => avatarFileInput.click());
+    avatarFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            newAvatarFile = file;
+            avatarPreview.src = URL.createObjectURL(file);
+        }
+    });
+
+    document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('save-changes-btn');
+        btn.textContent = "Saving...";
+        btn.disabled = true;
+
+        try {
+            const newName = document.getElementById('edit-name').value;
+            const newUsername = document.getElementById('edit-username').value;
+            const newBio = document.getElementById('edit-bio').value;
+            const newExp = document.getElementById('edit-experience').value;
+            const newSkills = document.getElementById('edit-skills').value.split(',');
+
+            let avatarUrl = document.getElementById('profile-image').src;
+            if (newAvatarFile) {
+                avatarUrl = await uploadAvatarFile(newAvatarFile, currentUser.uid);
+            }
+
+            // Update Auth
+            await updateProfile(currentUser, { displayName: newName, photoURL: avatarUrl });
+
+            // Update DB
+            const { error } = await supabase.from('profiles').upsert({
+                id: currentUser.uid,
+                full_name: newName,
+                username: newUsername,
+                bio: newBio,
+                experience: newExp,
+                skills: newSkills,
+                avatar_url: avatarUrl,
+                updated_at: new Date().toISOString()
+            });
+
+            if (error) throw error;
+
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.textContent = "Save";
+            btn.disabled = false;
+        }
+    });
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username');
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (user) {
+                await supabase.auth.setSession({ access_token: await user.getIdToken() });
+                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+            }
+            loadProfile(username);
+        });
+    });
+
+    // --- SHARE BUTTON LOGIC ---
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+            const username = document.getElementById('profile-username').textContent.substring(1); // Get username and remove '@'
+            const shareUrl = `${window.location.origin}${window.location.pathname}?username=${username}`;
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const originalContent = shareBtn.innerHTML;
+                shareBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Copied!';
+                lucide.createIcons({ nodes: [shareBtn] });
+                
+                setTimeout(() => {
+                    shareBtn.innerHTML = originalContent;
+                    lucide.createIcons({ nodes: [shareBtn] }); // Re-render the share icon
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy link: ', err);
+                alert('Could not copy link to clipboard.');
+            });
+        });
+    }
+    
+    // --- REALTIME FOLLOWER COUNT ---
+    supabase.channel('public:followers')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'followers' }, (payload) => {
+            const profileIdAffected = payload.new?.following_id || payload.old?.following_id;
+            const followerId = payload.new?.follower_id || payload.old?.follower_id;
+
+            // If the change affects the profile we are currently viewing,
+            // or if the current user's following count might have changed.
+            if (profileIdAffected === viewedProfileId || followerId === viewedProfileId) {
+                // Re-fetch the stats to update the UI in real-time
+                fetchFollowStats(viewedProfileId);
+            }
+        }).subscribe();
+
+    lucide.createIcons();
+</script>
 </body>
-
 </html>

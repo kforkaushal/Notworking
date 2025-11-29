@@ -1,0 +1,17 @@
+{
+    "hosting": {
+        "site": "we-notworking",
+        "public": ".",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "/profile/**",
+                "destination": "/profile.html"
+            }
+        ]
+    }
+}

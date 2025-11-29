@@ -107,8 +107,13 @@
                 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
                     <div class="h-16 bg-slate-200"></div>
                     <div class="p-4 text-center -mt-8">
-                        <img id="sidebar-profile-img" src="src/assets/avatar-placeholder.png"
-                            class="w-16 h-16 rounded-full mx-auto border-4 border-white" />
+                        <div class="relative inline-block group">
+                            <img id="sidebar-profile-img" src="src/assets/avatar-placeholder.png"
+                                class="w-16 h-16 rounded-full mx-auto border-4 border-white cursor-pointer group-hover:opacity-80 transition-opacity" />
+                            <div class="absolute inset-0 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+                            </div>
+                        </div>
                         <h3 id="sidebar-profile-name" class="font-bold mt-2">Loading...</h3>
                         <p id="sidebar-profile-email" class="text-sm text-slate-500">...</p>
                         <p class="text-xs text-slate-500 mt-2 italic">"Master of applying at 2AM"</p>
@@ -120,10 +125,10 @@
                         <li><a href="feed.html"
                                 class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50 text-brand-blue bg-slate-100"><i
                                     data-lucide="layout-dashboard" class="w-5 h-5"></i> Unemployed Feed</a></li>
-                        <li><a href="#"
+                        <li><a href="groups.html"
                                 class="nav-link flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50"><i
                                     data-lucide="users-2" class="w-5 h-5"></i> Groups</a></li>
-                        <li><a href="#"
+                        <li><a href="save.html"
                                 class="nav-link flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50"><i
                                     data-lucide="bookmark" class="w-5 h-5"></i> Saved Posts</a></li>
                         <li><a href="#" id="logout-btn"
@@ -163,13 +168,13 @@
             </div>
 
             <!-- Container for posts, with a loading spinner initially -->
-            <div id="feed-posts-container" class="space-y-6">
+            <div id="feed-posts-container" class="space-y-6 min-h-[100px]">
                 <div id="loading-spinner" class="flex justify-center items-center py-20">
                     <i data-lucide="loader-2" class="w-12 h-12 text-slate-400 animate-spin"></i>
                 </div>
-                <div id="load-more-container" class="text-center hidden">
-                    <button id="load-more-btn" class="px-6 py-3 bg-slate-800 hover:bg-black text-white font-bold rounded-xl transition">Load More Posts</button>
-                </div>
+            </div>
+            <div id="scroll-sentinel" class="h-20 flex justify-center items-center">
+                <i data-lucide="loader-2" class="w-8 h-8 text-slate-400 animate-spin opacity-0 transition-opacity"></i>
             </div>
         </main>
 
@@ -212,337 +217,413 @@
 
     <!-- Firebase -->
     <script type="module">
-        // Centralized clients
-        import { auth } from '../Data/firebase-client.js';
-        import supabase from '../Data/supabase-client.js';
+    // FIX 1: Changed "../Data" to "./Data" so imports work from the root folder
+    import { auth } from './Data/firebase-client.js';
+    import supabase from './Data/supabase-client.js';
+    import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-        // Firebase functions
-        import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    let currentPage = 0;
+    const POSTS_PER_PAGE = 5;
+    let isLoading = false;
+    let hasMore = true;
+    let currentUser = null;
 
-        // --- STATE MANAGEMENT ---
-        let currentPage = 0;
-        const POSTS_PER_PAGE = 10;
+    // --- HELPER: UPLOAD FILE ---
+    async function uploadFile(file, userId) {
+        if (!currentUser) return null;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}-${Date.now()}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+        const { error } = await supabase.storage.from('media').upload(filePath, file);
+        if (error) throw new Error("Upload failed: " + error.message);
+        const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+        return data.publicUrl;
+    }
 
-        // --- UI UPDATE FUNCTION ---
-        const updateUserProfileUI = (user) => {
-            const displayName = user.displayName || user.email.split('@')[0];
-            const photoURL = user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`; // Use UID for a consistent random avatar
+    // --- CREATE POST ---
+    async function createPost() {
+        if (!currentUser) return alert("Login to post.");
+        const content = document.getElementById("post-input").value;
+        const file = document.getElementById("file-input").files[0];
 
-            // Nav Bar
-            document.getElementById('nav-profile-img').src = photoURL;
-            document.getElementById('nav-profile-name').textContent = displayName.split(' ')[0]; // Show first name
+        if (!content.trim() && !file) return alert("Content required.");
 
-            // Sidebar
-            document.getElementById('sidebar-profile-img').src = photoURL;
-            document.getElementById('sidebar-profile-name').textContent = displayName;
-            document.getElementById('sidebar-profile-email').textContent = user.email;
+        const btn = document.getElementById('post-btn');
+        btn.disabled = true;
+        btn.textContent = 'Posting...';
 
-            // Dropdown Header
-            document.getElementById('dropdown-user-name').textContent = displayName;
-            document.getElementById('dropdown-user-email').textContent = user.email;
-
-            // Create Post box
-            document.getElementById('create-post-avatar').src = photoURL;
-        };
-
-        // --- UPLOAD LOGIC ---
-        async function uploadFile(file) {
-            const user = auth.currentUser;
-            if (!user) return null;
-
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user.uid}-${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('media') // Assumes you have a 'media' bucket in Supabase Storage
-                .upload(filePath, file);
-
-            if (uploadError) {
-                console.error('Error uploading file:', uploadError);
-                return null;
-            }
-
-            // Get public URL
-            const { data } = supabase.storage.from('media').getPublicUrl(filePath);
-            return data.publicUrl;
-        }
-
-        // --- POSTING LOGIC ---
-        async function createPost() {
-            const user = auth.currentUser;
-            if (!user) {
-                alert("You must be logged in to post.");
-                return;
-            }
-            
-            const postContent = document.getElementById("post-input").value;
-            const fileInput = document.getElementById("file-input");
-            const file = fileInput.files[0];
-
-            if (!postContent.trim() && !file) {
-                alert("Are you trying to post oxygen? Write something or add a file.");
-                return;
-            }
-
-            const postBtn = document.getElementById('post-btn');
-            postBtn.disabled = true;
-            postBtn.textContent = 'Posting...';
-
-            let mediaUrl = null;
-            let mediaType = null;
-
+        try {
+            let mediaUrl = null, mediaType = null;
             if (file) {
-                mediaUrl = await uploadFile(file);
-                if (!mediaUrl) {
-                    alert("Error uploading file. Please try again.");
-                    postBtn.disabled = false;
-                    postBtn.textContent = 'Post to the Void';
-                    return;
-                }
+                mediaUrl = await uploadFile(file, currentUser.uid);
                 mediaType = file.type.startsWith('image') ? 'image' : 'video';
             }
 
-            const { data, error } = await supabase
-                .from("posts")
-                .insert([{ user_id: user.uid, content: postContent, media_url: mediaUrl, media_type: mediaType }]);
+            const { error } = await supabase.from("posts").insert([{ 
+                user_id: currentUser.uid, content, media_url: mediaUrl, media_type: mediaType 
+            }]);
 
-            if (error) {
-                console.error(error);
-                alert("Error posting to the void.");
+            if (error) throw error;
+            document.getElementById("post-input").value = ""; 
+            document.getElementById("file-input").value = "";
+            
+            // Reload feed to show new post
+            currentPage = 0;
+            hasMore = true;
+            document.getElementById("feed-posts-container").innerHTML = '';
+            fetchPosts();
+
+        } catch (err) {
+            console.error(err);
+            alert("Error: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Post to the Void';
+        }
+    }
+
+    // --- POST ACTIONS ---
+    async function handlePostAction(e) {
+        const btn = e.target.closest('button');
+        if (!btn || !currentUser) return;
+
+        const postId = btn.dataset.postId;
+        
+        // LIKE
+        if (btn.classList.contains('like-btn')) {
+            const countSpan = btn.querySelector('span');
+            const icon = btn.querySelector('svg');
+            const isLiked = btn.classList.contains('text-red-500');
+            
+            // Optimistic UI
+            if (isLiked) {
+                btn.classList.remove('text-red-500');
+                icon.classList.remove('fill-current');
+                countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
+                await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
             } else {
-                document.getElementById("post-input").value = ""; // reset field
-                fileInput.value = ""; // reset file input
-                // The realtime subscription will handle the refresh, no need to call fetchPosts() here.
+                btn.classList.add('text-red-500');
+                icon.classList.add('fill-current');
+                countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
             }
         }
 
-        // --- UI HELPERS ---
-        function updateLikeCountUI(postId, newCount) {
-            const likeButton = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
-            if (likeButton) {
-                likeButton.querySelector('span').textContent = newCount;
+        // COMMENTS TOGGLE
+        if (btn.classList.contains('comment-btn')) {
+            const card = btn.closest('.post-card');
+            const section = card.querySelector('.comment-section');
+            section.classList.toggle('hidden');
+            if (!section.classList.contains('hidden')) {
+                loadComments(postId, section.querySelector('.comments-list'));
             }
         }
 
-        // --- LIKING LOGIC ---
-        async function toggleLike(postId) {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            // First, check if the user has already liked the post
-            const { data: existingLike, error: selectError } = await supabase
-                .from('likes')
-                .select('id')
-                .eq('post_id', postId)
-                .eq('user_id', user.uid)
-                .single();
-
-            if (existingLike) { // If like exists, unlike it
-                await supabase.from('likes').delete().eq('id', existingLike.id);
-            } else { // If no like, create one
-                await supabase.from('likes').insert({ post_id: postId, user_id: user.uid });
+        // DELETE
+        if (btn.classList.contains('delete-btn')) {
+            if (confirm("Delete this post?")) {
+                const { error } = await supabase.from('posts').delete().eq('id', postId);
+                if (!error) btn.closest('.post-card').remove();
             }
-            // The realtime subscription for 'likes' will handle the UI update.
         }
 
-        function createPostElement(post) {
-            const authorName = post.profiles?.full_name || 'Anonymous User';
-            const authorAvatar = post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`;
-            const likeCount = post.likes && post.likes.length > 0 ? post.likes[0].count : 0;
+        // SAVE
+        if (btn.classList.contains('save-btn')) {
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+            const isSaved = btn.classList.contains('text-green-500');
 
-            const postDiv = document.createElement('div');
-            postDiv.id = `post-${post.id}`;
-            postDiv.className = "bg-white p-5 rounded-2xl shadow border border-slate-200";
-
-            let mediaHTML = '';
-            if (post.media_url && post.media_type === 'image') {
-                mediaHTML = `<img src="${post.media_url}" class="mt-4 rounded-lg border border-slate-200 w-full" alt="Post image">`;
-            } else if (post.media_url && post.media_type === 'video') {
-                mediaHTML = `<video controls src="${post.media_url}" class="mt-4 rounded-lg border border-slate-200 w-full"></video>`;
+            if (isSaved) {
+                btn.classList.remove('text-green-500');
+                if (span) span.textContent = 'Save';
+                await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+            } else {
+                btn.classList.add('text-green-500');
+                if (span) span.textContent = 'Saved';
+                await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
             }
+        }
+    }
 
-            postDiv.innerHTML = `
-                <div class="flex items-start gap-4">
-                    <img src="${authorAvatar}" class="w-12 h-12 rounded-full flex-shrink-0" />
-                    <div class="w-full">
-                        <div class="flex justify-between items-center">
-                            <strong class="text-slate-900">${authorName}</strong>
-                            <span class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</span>
-                        </div>
-                        <p class="mt-3 text-slate-800 text-lg">${post.content}</p>
-                        ${mediaHTML}
-                        <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm">
-                            <button class="like-btn flex items-center gap-2 hover:text-red-500" data-post-id="${post.id}">
-                                <i data-lucide="heart" class="w-4 h-4"></i> 
-                                <span>${likeCount}</span>
-                            </button>
-                            <button class="flex items-center gap-2 hover:text-blue-500">
-                                <i data-lucide="message-circle" class="w-4 h-4"></i> 0
-                            </button>
+    // --- COMMENTS LOGIC ---
+    async function loadComments(postId, container) {
+        container.innerHTML = '<div class="text-xs text-slate-400 p-2">Loading...</div>';
+        const { data: comments } = await supabase.from('comments')
+            .select('content, created_at, profiles(username, avatar_url)')
+            .eq('post_id', postId).order('created_at', { ascending: true });
+        
+        container.innerHTML = '';
+        if(!comments || !comments.length) {
+            container.innerHTML = '<div class="text-xs text-slate-400 p-2">No comments yet.</div>';
+            return;
+        }
+
+        comments.forEach(c => {
+            const div = document.createElement('div');
+            div.className = "flex gap-2 mb-2 text-sm";
+            div.innerHTML = `
+                <img src="${c.profiles?.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-6 h-6 rounded-full mt-1">
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-900 text-xs">${c.profiles?.username || 'User'}</span>
+                    <p class="text-slate-700">${c.content}</p>
+                </div>`;
+            container.appendChild(div);
+        });
+    }
+
+    async function handleCommentSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const input = form.querySelector('input');
+        const content = input.value.trim();
+        const postId = form.dataset.postId;
+        
+        if(!content || !currentUser) return;
+        input.value = '';
+
+        const { error } = await supabase.from('comments').insert({
+            post_id: postId, user_id: currentUser.uid, content
+        });
+
+        if(!error) {
+            loadComments(postId, form.previousElementSibling);
+            const btnSpan = form.closest('.post-card').querySelector('.comment-btn span');
+            if(btnSpan) btnSpan.textContent = parseInt(btnSpan.textContent) + 1;
+        }
+    }
+
+    // --- RENDER POST ---
+    function createPostElement(post) {
+        const isOwner = currentUser && post.user_id === currentUser.uid;
+        // SAFE CHECKS for counts
+        const likeCount = post.likes?.[0]?.count || 0;
+        const commentCount = post.comments?.[0]?.count || 0;
+        const avatar = post.profiles?.avatar_url || 'src/assets/avatar-placeholder.png';
+        const name = post.profiles?.full_name || 'Anonymous';
+        const username = post.profiles?.username || '';
+
+        const div = document.createElement('div');
+        div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group";
+
+        let mediaHTML = '';
+        if (post.media_url) {
+            mediaHTML = post.media_type === 'video' 
+                ? `<video controls src="${post.media_url}" class="mt-4 rounded-lg w-full max-h-96 object-cover bg-black"></video>` 
+                : `<img src="${post.media_url}" loading="lazy" class="mt-4 rounded-lg w-full max-h-96 object-cover bg-slate-100">`;
+        }
+
+        const deleteBtn = isOwner ? `
+            <button class="delete-btn absolute top-5 right-5 text-slate-300 hover:text-red-500 transition p-2" title="Delete" data-post-id="${post.id}">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>` : '';
+
+        div.innerHTML = `
+            ${deleteBtn}
+            <div class="flex items-start gap-4">
+                <a href="profile.html?username=${username}" class="flex-shrink-0">
+                    <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                </a>
+                <div class="w-full">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <a href="profile.html?username=${username}" class="font-bold text-slate-900 hover:underline">${name}</a>
+                            <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</p>
                         </div>
                     </div>
-                </div>
-            `;
-            // Initialize the icon for just this new element
-            lucide.createIcons({
-                nodes: [postDiv]
-            });
-            return postDiv;
-        }
+                    <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap">${post.content || ''}</p>
+                    ${mediaHTML}
+                    
+                    <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm font-medium">
+                        <button class="like-btn flex items-center gap-2 hover:text-red-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="heart" class="w-5 h-5"></i> <span>${likeCount}</span>
+                        </button>
+                        <button class="comment-btn flex items-center gap-2 hover:text-blue-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i> <span>${commentCount}</span>
+                        </button>
+                        <button class="save-btn flex items-center gap-2 hover:text-green-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="bookmark" class="w-5 h-5"></i> <span>Save</span>
+                        </button>
+                    </div>
 
-        // --- FETCHING & RENDERING POSTS ---
-        async function fetchPosts() {
+                    <div class="comment-section hidden mt-4 pt-4 border-t border-slate-100 bg-slate-50/50 rounded-xl p-4">
+                        <div class="comments-list max-h-60 overflow-y-auto mb-4"></div>
+                        <form class="comment-form flex gap-2 items-center" data-post-id="${post.id}">
+                            <img src="${document.getElementById('nav-profile-img').src}" class="w-8 h-8 rounded-full border border-slate-200">
+                            <input type="text" placeholder="Write a comment..." class="flex-1 bg-white border border-slate-200 rounded-full px-4 py-2 text-sm focus:outline-none">
+                            <button type="submit" class="text-brand-blue font-bold text-sm px-2">Post</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+
+    // --- FETCH POSTS (Safe Version) ---
+    async function fetchPosts() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+        const spinner = document.getElementById('loading-spinner');
+        const container = document.getElementById("feed-posts-container");
+
+        try {
             const from = currentPage * POSTS_PER_PAGE;
             const to = from + POSTS_PER_PAGE - 1;
 
-            const { data: posts, error: postsError } = await supabase
-                .from("posts")
-                .select(`
-                    *,
-                    media_url,
-                    media_type,
-                    likes(count),
-                    profiles (
-                        full_name,
-                        avatar_url
-                    )
-                `)
+            // Updated Query: Removed ":user_id" alias to avoid potential relationship bugs
+            const { data: posts, error } = await supabase.from("posts")
+                .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                 .order("created_at", { ascending: false })
                 .range(from, to);
 
-            if (postsError) {
-                console.error("Error fetching posts:", postsError);
-                return;
+            if (error) throw error;
+
+            // Hide spinner manually if it exists
+            if (spinner) spinner.classList.add('hidden');
+
+            if (posts && posts.length > 0) {
+                posts.forEach(post => {
+                    const el = createPostElement(post);
+                    container.appendChild(el);
+                    lucide.createIcons({ nodes: [el] });
+                });
+                currentPage++;
+            } else if (currentPage === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-slate-500">No posts yet. Be the first!</div>';
+                hasMore = false;
             }
-
-            renderPosts(posts, currentPage === 0);
-
-            // Show or hide the "Load More" button
-            const loadMoreContainer = document.getElementById('load-more-container');
-            if (posts.length < POSTS_PER_PAGE) {
-                loadMoreContainer.classList.add('hidden');
-            } else {
-                loadMoreContainer.classList.remove('hidden');
+        } catch (err) {
+            console.error("Feed Error:", err);
+            // Show error ON SCREEN so we know what's wrong
+            if (container) {
+                container.innerHTML += `
+                    <div class="p-4 mb-4 text-red-700 bg-red-100 rounded-lg border border-red-300">
+                        <strong>Error loading feed:</strong> ${err.message}<br>
+                        <small>Check console for details.</small>
+                    </div>`;
             }
-
-            currentPage++;
+            if (spinner) spinner.classList.add('hidden');
+        } finally {
+            isLoading = false;
         }
+    }
 
-        function renderPosts(posts, clearContainer) {
-            const container = document.getElementById("feed-posts-container");
-            document.getElementById('loading-spinner').classList.add('hidden');
-
-            if (clearContainer) {
-                container.innerHTML = ''; // Only clear for the first page load
-            }
-
-            if (!posts || posts.length === 0 && clearContainer) {
-                container.innerHTML = `<div class="text-center text-slate-500 py-10">The void is quiet... Be the first to scream into it.</div>`;
-                return;
-            }
-
-            posts.forEach(post => {
-                const postElement = createPostElement(post);
-                container.appendChild(postElement);
-            });
+    // --- SCROLL LISTENER (Simple Infinite Scroll) ---
+    window.addEventListener('scroll', () => {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+            fetchPosts();
         }
+    });
 
-        // --- REALTIME SUBSCRIPTION ---
-        const postsChannel = supabase
-            .channel('public:posts')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
-                console.log('New post detected, prepending to feed.');
-                const { data: newPost, error } = await supabase.from('posts').select(`*, likes(count), profiles(*)`).eq('id', payload.new.id).single();
-                if (error) return console.error("Error fetching new post details:", error);
-                
-                const postElement = createPostElement(newPost);
-                document.getElementById('feed-posts-container').prepend(postElement);
-            })
-            .subscribe();
+    // --- INIT ---
+    onIdTokenChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            await supabase.auth.setSession({ access_token: await user.getIdToken() });
+
+            const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
+            const name = user.displayName || 'User';
+            const email = user.email || '';
+
+            // Update UI elements
+            const updateEl = (id, prop, val) => { const el = document.getElementById(id); if(el) el[prop] = val; };
+            
+            updateEl('nav-profile-img', 'src', photo);
+            updateEl('nav-profile-name', 'textContent', name.split(' ')[0]);
+            updateEl('create-post-avatar', 'src', photo);
+            
+            updateEl('sidebar-profile-img', 'src', photo);
+            updateEl('sidebar-profile-name', 'textContent', name);
+            updateEl('sidebar-profile-email', 'textContent', email);
+
+            updateEl('dropdown-user-name', 'textContent', name);
+            updateEl('dropdown-user-email', 'textContent', email);
+
+            // Start Feed
+            if (currentPage === 0) fetchPosts();
+        } else {
+            window.location.href = 'Auth/login.html';
+        }
+    });
+
+    // --- EVENT DELEGATION ---
+    const feedContainer = document.getElementById('feed-posts-container');
+    if (feedContainer) {
+        feedContainer.addEventListener('click', handlePostAction);
+        feedContainer.addEventListener('submit', (e) => {
+            if(e.target.classList.contains('comment-form')) handleCommentSubmit(e);
+        });
+    }
+
+    document.getElementById("post-btn").addEventListener("click", createPost);
+    
+    // File Inputs
+    const fileInput = document.getElementById('file-input');
+    document.getElementById('photo-upload-btn').addEventListener('click', () => fileInput.click());
+    document.getElementById('video-upload-btn').addEventListener('click', () => fileInput.click());
+
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    if(logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
+    const navLogout = document.getElementById('nav-logout-btn');
+    if(navLogout) navLogout.addEventListener('click', () => signOut(auth));
+
+    // Realtime Updates
+    supabase.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
+        // A new post has been inserted, let's fetch its full data
+        const { data: newPost, error } = await supabase.from('posts')
+            .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+            .eq('id', payload.new.id)
+            .single();
+
+        if (newPost && !error) {
+            const postElement = createPostElement(newPost);
+            document.getElementById('feed-posts-container').prepend(postElement);
+            lucide.createIcons({ nodes: [postElement] }); // Render icons for the new post
+        }
+    }).subscribe();
+
+    // Realtime updates for Likes
+    supabase.channel('public:likes').on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, (payload) => {
+        const userInvolved = payload.new?.user_id || payload.old?.user_id;
+        // Don't re-run for the user who made the change, as their UI is already updated.
+        if (userInvolved === currentUser?.uid) return;
+
+        const postId = payload.new?.post_id || payload.old?.post_id;
+        const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+        if (likeBtn) {
+            const countSpan = likeBtn.querySelector('span');
+            const currentCount = parseInt(countSpan.textContent);
+            if (payload.eventType === 'INSERT') {
+                countSpan.textContent = currentCount + 1;
+            } else if (payload.eventType === 'DELETE') {
+                countSpan.textContent = Math.max(0, currentCount - 1);
+            }
+        }
+    }).subscribe();
+
+    // Realtime updates for Comments
+    supabase.channel('public:comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+        // Don't re-run for the user who made the change.
+        if (payload.new.user_id === currentUser?.uid) return;
+
+        const postId = payload.new.post_id;
+        const postCard = document.querySelector(`.comment-btn[data-post-id="${postId}"]`)?.closest('.post-card');
+        if (postCard) {
+            // Update comment count
+            const countSpan = postCard.querySelector('.comment-btn span');
+            countSpan.textContent = parseInt(countSpan.textContent) + 1;
+
+            // If the comment section is open, refresh it
+            const commentSection = postCard.querySelector('.comment-section');
+            if (!commentSection.classList.contains('hidden')) {
+                loadComments(postId, commentSection.querySelector('.comments-list'));
+            }
+        }
+    }).subscribe();
         
-        const likesChannel = supabase
-            .channel('public:likes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
-                console.log('Like change detected', payload);
-                const postId = payload.new.post_id || payload.old.post_id;
-                if (postId) {
-                    const { count, error } = await supabase.from('likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
-                    if (error) console.error('Error counting likes:', error);
-                    else updateLikeCountUI(postId, count);
-                }
-            })
-            .subscribe();
-
-        // --- EVENT DELEGATION FOR LIKES ---
-        document.getElementById('feed-posts-container').addEventListener('click', (e) => {
-            const likeButton = e.target.closest('.like-btn');
-            if (likeButton) {
-                toggleLike(likeButton.dataset.postId);
-            }
-        });
-
-        // --- AUTH STATE OBSERVER ---
-        onIdTokenChanged(auth, async (user) => {
-            if (user) {
-                console.log('User state changed. Updating UI and Supabase token.');
-                updateUserProfileUI(user);
-
-                // Get the latest token and set the Supabase session.
-                // This runs on login and whenever the token refreshes.
-                try {
-                    const token = await user.getIdToken();
-                    const { error } = await supabase.auth.setSession({ access_token: token });
-                    if (error) throw error;
-                } catch (error) {
-                    console.error('Error getting Firebase token for Supabase:', error);
-                    return; // Stop execution if we can't auth with Supabase
-                }
-
-                // Initial fetch of posts
-                fetchPosts();
-
-            } else {
-                // User is signed out
-                console.log('User is signed out. Redirecting to login.');
-                // Redirect to login page if not authenticated
-                window.location.href = 'Auth/login.html';
-            }
-        });
-
-        // --- FILE UPLOAD BUTTON LISTENERS ---
-        const fileInput = document.getElementById('file-input');
-        document.getElementById('photo-upload-btn').addEventListener('click', () => {
-            fileInput.click();
-        });
-        document.getElementById('video-upload-btn').addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // --- POST BUTTON LISTENER ---
-        document.getElementById("post-btn").addEventListener("click", createPost);
-
-        // --- LOAD MORE BUTTON LISTENER ---
-        document.getElementById('load-more-btn').addEventListener('click', fetchPosts);
-
-        // --- LOGOUT LOGIC ---
-        const handleLogout = (e) => {
-            e.preventDefault();
-            signOut(auth).catch((error) => {
-                console.error('Logout Error', error);
-            });
-        };
-
-        // Attach to both logout buttons
-        const sidebarLogoutButton = document.getElementById('logout-btn');
-        const navLogoutButton = document.getElementById('nav-logout-btn');
-
-        sidebarLogoutButton.addEventListener('click', handleLogout);
-        navLogoutButton.addEventListener('click', handleLogout);
-
-        // Initialize Icons
-        lucide.createIcons();
-    </script>
+    lucide.createIcons();
+</script>
 </body>
 
 </html>

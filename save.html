@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Posts - NotWorking</title>
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap'); body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
+            <div class="flex items-center gap-4">
+                <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
+                <a href="profile.html">
+                    <img id="nav-profile-img" src="src/assets/avatar-placeholder.png" class="w-8 h-8 rounded-full border border-slate-200" />
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Saved Posts</h1>
+            <p class="text-slate-500 mt-1">Your collection of posts to cry about later.</p>
+        </div>
+
+        <div id="saved-posts-container" class="space-y-6">
+            <div id="loading-spinner" class="flex justify-center items-center py-20">
+                <i data-lucide="loader-2" class="w-12 h-12 text-slate-400 animate-spin"></i>
+            </div>
+        </div>
+    </main>
+
+<script type="module">
+    import { auth } from './Data/firebase-client.js';
+    import supabase from './Data/supabase-client.js';
+    import { onIdTokenChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    let currentUser = null;
+
+    // --- RENDER POST (Copied from feed.html, can be modularized later) ---
+    function createPostElement(post) {
+        const isOwner = currentUser && post.user_id === currentUser.uid;
+        const likeCount = post.likes?.[0]?.count || 0;
+        const commentCount = post.comments?.[0]?.count || 0;
+        const avatar = post.profiles?.avatar_url || 'src/assets/avatar-placeholder.png';
+        const name = post.profiles?.full_name || 'Anonymous';
+        const username = post.profiles?.username || '';
+
+        const div = document.createElement('div');
+        div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group";
+
+        let mediaHTML = '';
+        if (post.media_url) {
+            mediaHTML = post.media_type === 'video' 
+                ? `<video controls src="${post.media_url}" class="mt-4 rounded-lg w-full max-h-96 object-cover bg-black"></video>` 
+                : `<img src="${post.media_url}" loading="lazy" class="mt-4 rounded-lg w-full max-h-96 object-cover bg-slate-100">`;
+        }
+
+        div.innerHTML = `
+            <div class="flex items-start gap-4">
+                <a href="profile.html?username=${username}" class="flex-shrink-0">
+                    <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                </a>
+                <div class="w-full">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <a href="profile.html?username=${username}" class="font-bold text-slate-900 hover:underline">${name}</a>
+                            <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap">${post.content || ''}</p>
+                    ${mediaHTML}
+                    
+                    <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm font-medium">
+                        <button class="flex items-center gap-2 hover:text-red-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="heart" class="w-5 h-5"></i> <span>${likeCount}</span>
+                        </button>
+                        <button class="flex items-center gap-2 hover:text-blue-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i> <span>${commentCount}</span>
+                        </button>
+                        <button class="flex items-center gap-2 text-green-500 transition" data-post-id="${post.id}">
+                            <i data-lucide="bookmark" class="w-5 h-5"></i> <span>Saved</span>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        return div;
+    }
+
+    // --- FETCH SAVED POSTS ---
+    async function fetchSavedPosts() {
+        if (!currentUser) return;
+
+        const container = document.getElementById('saved-posts-container');
+        const spinner = document.getElementById('loading-spinner');
+
+        try {
+            // 1. Get the IDs of all posts saved by the current user
+            const { data: savedRelations, error: savedError } = await supabase
+                .from('saved_posts')
+                .select('post_id')
+                .eq('user_id', currentUser.uid);
+
+            if (savedError) throw savedError;
+
+            if (!savedRelations || savedRelations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                        <i data-lucide="bookmark-x" class="w-10 h-10 mx-auto mb-2 text-slate-400"></i>
+                        You haven't saved any posts yet.
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const postIds = savedRelations.map(r => r.post_id);
+
+            // 2. Fetch the full post data for those IDs
+            const { data: posts, error: postsError } = await supabase
+                .from('posts')
+                .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                .in('id', postIds)
+                .order('created_at', { ascending: false });
+
+            if (postsError) throw postsError;
+
+            container.innerHTML = ''; // Clear spinner
+
+            if (posts && posts.length > 0) {
+                posts.forEach(post => {
+                    const el = createPostElement(post);
+                    container.appendChild(el);
+                });
+            } else {
+                 container.innerHTML = `
+                    <div class="text-center py-10 text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                        <i data-lucide="bookmark-x" class="w-10 h-10 mx-auto mb-2 text-slate-400"></i>
+                        Could not find the posts you saved. They may have been deleted.
+                    </div>`;
+            }
+            
+            lucide.createIcons();
+
+        } catch (err) {
+            console.error("Error fetching saved posts:", err);
+            if (spinner) spinner.classList.add('hidden');
+            container.innerHTML = `
+                <div class="p-4 text-red-700 bg-red-100 rounded-lg">
+                    <strong>Error:</strong> ${err.message}
+                </div>`;
+        }
+    }
+
+    // --- INIT ---
+    onIdTokenChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            await supabase.auth.setSession({ access_token: await user.getIdToken() });
+
+            // Update nav bar avatar
+            const navImg = document.getElementById('nav-profile-img');
+            if (navImg) navImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+
+            // Fetch the saved posts for this user
+            fetchSavedPosts();
+        } else {
+            // Not logged in, redirect to login page
+            window.location.href = 'Auth/login.html';
+        }
+    });
+
+    lucide.createIcons();
+</script>
+</body>
+</html>
