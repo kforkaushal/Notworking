@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -134,10 +135,22 @@
         let activeConversationUserId = null;
         let messageSubscription = null;
     let typingTimeout;
-
         let searchTimeout;
         const convosList = document.getElementById('conversations-list');
         const chatWindow = document.getElementById('chat-window');
+
+        // --- NOTIFICATION SOUND ---
+        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3'); // Simple beep sound
+
+        function playSound() {
+            try {
+                notificationSound.currentTime = 0;
+                notificationSound.play();
+            } catch (e) {
+                console.log("Audio play failed (user interaction needed first)");
+            }
+        }
+
 
         // --- UI HELPERS ---
         const showChatWindow = () => {
@@ -158,7 +171,8 @@
             const colorClass = isSender ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-800';
             const div = document.createElement('div');
             div.className = `flex ${alignClass}`;
-            div.innerHTML = `<div class="${colorClass} max-w-md p-3 rounded-2xl">${message.content}</div>`;
+            // Add a data-message-id attribute if the message has an ID
+            div.innerHTML = `<div class="${colorClass} max-w-md p-3 rounded-2xl" ${message.id ? `data-message-id="${message.id}"` : ''}>${message.content}</div>`;
             return div;
         }
 
@@ -251,43 +265,34 @@
                 scrollToBottom();
             }
 
-            // 3. REALTIME SETUP (THE FIX)
-            
-            // Generate a unique Room ID that is SAME for both users (sort the IDs)
-            // Example: "chat-userA-userB" is the same as "chat-userB-userA" if sorted
-            const roomIds = [currentUser.uid, otherUserId].sort();
-            const roomName = `chat-${roomIds[0]}-${roomIds[1]}`;
+            // 3. REALTIME SETUP (Using Database Triggers)
+            // We listen for any new rows in the 'messages' table.
+            // The filter ensures we only get notified about messages relevant to THIS conversation.
+            // Create a unique, consistent channel name for the conversation
+            const channelName = [currentUser.uid, otherUserId].sort().join('-');
 
-            messageSubscription = supabase.channel(roomName)
+            messageSubscription = supabase.channel(`messages:${channelName}`)
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'messages',
-                    // FIX: This filter tells Supabase to only send us messages that are part of this specific conversation.
-                    filter: `or(and(sender_id.eq.${currentUser.uid},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUser.uid}))`
+                    // Corrected filter syntax
+                    filter: `receiver_id=eq.${currentUser.uid}`
                 }, payload => {
                     const newMessage = payload.new;
-                    // Since the filter is now working, we only get relevant messages.
-                    // We just need to make sure we don't re-add the message we just sent.
-                    if (newMessage.sender_id !== currentUser.uid) {
+
+                    // Prevent duplicate rendering from optimistic UI
+                    if (document.querySelector(`[data-message-id="${newMessage.id}"]`)) return;
+
+                    // We only want to display the message if it was sent by the OTHER user in this active chat.
+                    if (newMessage.sender_id === activeConversationUserId) {
+                        // Hide typing indicator when a message arrives
+                        document.getElementById('typing-indicator').classList.add('hidden');
                         messagesContainer.appendChild(createMessageElement(newMessage, false));
                         scrollToBottom();
                     }
                 })
                 .subscribe();
-
-            // Typing Indicators (Now works because RoomName is consistent)
-            messageSubscription.on('broadcast', { event: 'typing' }, (payload) => {
-                const typingIndicator = document.getElementById('typing-indicator');
-                if (payload.sender_id === activeConversationUserId) {
-                    if (payload.is_typing) {
-                        typingIndicator.classList.remove('hidden');
-                        scrollToBottom();
-                    } else {
-                        typingIndicator.classList.add('hidden');
-                    }
-                }
-            });
         }
 
         async function handleSendMessage(e) {
@@ -309,7 +314,12 @@
             scrollToBottom();
             input.value = '';
 
+            // Stop broadcasting "typing"
+            clearTimeout(typingTimeout);
+            // messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
+
             const { error } = await supabase.from('messages').insert(messagePayload);
+
             if (error) {
                 console.error('Error sending message:', error);
                 alert('Failed to send message.');
@@ -322,21 +332,23 @@
     // --- TYPING INDICATOR LOGIC ---
     const messageInput = document.getElementById('message-input');
     messageInput.addEventListener('input', () => {
-        if (!messageSubscription) return;
-
-        // Broadcast that we are typing
-        messageSubscription.send({
-            type: 'broadcast',
-            event: 'typing',
-            is_typing: true,
-            sender_id: currentUser.uid
-        });
-
-        // Set a timeout to broadcast that we stopped typing
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-            messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
-        }, 2000); // 2-second delay
+        // NOTE: Typing indicators require the 'broadcast' feature.
+        // This functionality is commented out as the request was to use database triggers.
+        // if (!messageSubscription || !currentUser) return;
+        //
+        // // Broadcast that we are typing
+        // messageSubscription.send({
+        //     type: 'broadcast',
+        //     event: 'typing',
+        //     is_typing: true,
+        //     sender_id: currentUser.uid
+        // });
+        //
+        // // Set a timeout to broadcast that we stopped typing
+        // clearTimeout(typingTimeout);
+        // typingTimeout = setTimeout(() => {
+        //     messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
+        // }, 2000); // 2-second delay
     });
 
         // --- NEW MESSAGE MODAL & SEARCH LOGIC ---
@@ -414,6 +426,47 @@
 
                 // Load user's conversations
                 await loadConversations();
+
+                // Set up a global listener for ANY incoming message
+                supabase.channel('public:messages:all')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `receiver_id=eq.${user.uid}`
+                    }, async (payload) => {
+                        const newMessage = payload.new;
+                        const isActiveConversation = newMessage.sender_id === activeConversationUserId;
+
+                        // Find the conversation item in the sidebar
+                        const convoItem = document.querySelector(`[data-user-id="${newMessage.sender_id}"]`);
+
+                        // 1. Update the "last message" text in the sidebar
+                        if (convoItem) {
+                            const lastMessageEl = convoItem.querySelector('.last-message');
+                            if (lastMessageEl) {
+                                lastMessageEl.textContent = newMessage.content;
+                            }
+                            // Move the conversation to the top of the list
+                            convoItem.parentElement.prepend(convoItem);
+                        } else {
+                            // If it's a brand new conversation, we must reload the whole list
+                            await loadConversations();
+                            return; // Exit early since the list is rebuilt
+                        }
+
+                        // 2. Handle Notifications & Unread Badges
+                        if (!isActiveConversation) {
+                            // If we are NOT talking to them, play a sound and show a notification
+                            playSound();
+                            // (Desktop notification logic is already here and correct)
+                        } else {
+                            // If we ARE talking to them, mark it as read immediately 
+                            // This prevents the unread count from incrementing on the next page load
+                            await supabase.from('messages').update({ is_read: true }).eq('id', newMessage.id);
+                        }
+                    })
+                    .subscribe();
 
                 // Check if URL has a 'user' param to auto-open a conversation
                 const params = new URLSearchParams(window.location.search);

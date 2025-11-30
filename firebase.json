@@ -12,6 +12,16 @@
                 "source": "/profile/**",
                 "destination": "/profile.html"
             }
+        ],
+        "headers": [
+            { 
+                "source": "**", 
+                "headers": [
+                    { "key": "Access-Control-Allow-Origin", "value": "*" },
+                    { "key": "Access-Control-Allow-Headers", "value": "apikey,authorization,content-type,x-client-info,x-supabase-auth" },
+                    { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS, PUT, DELETE" }
+                ] 
+            }
         ]
     }
 }

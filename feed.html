@@ -60,9 +60,11 @@
                 </a>
                 <a href="messages.html" class="nav-link relative flex flex-col items-center gap-0.5 px-2 hover:text-blue-600"
                     title="Messaging">
-                    <i data-lucide="message-square" class="w-6 h-6"></i>
-                    <span id="message-notification-dot" class="absolute top-0 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white hidden"></span>
-                    <span class="text-xs font-bold hidden sm:block">Messaging</span>
+                    <div class="relative">
+                        <i data-lucide="message-square" class="w-6 h-6"></i>
+                        <span id="msg-unread-badge" class="hidden absolute -top-2 -right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </div>
+                     <span class="text-xs font-bold hidden sm:block">Messaging</span>
                 </a>
                 <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative">
                     <i data-lucide="bell" class="w-6 h-6"></i>
@@ -260,12 +262,46 @@
 
     </div>
 
+    <div id="toast-container" class="fixed bottom-4 right-4 space-y-3 z-50"></div>
+    
+    <script>
+    function showToast(title, message, senderId) {
+        const container = document.getElementById("toast-container");
+    
+        const div = document.createElement("div");
+        div.className =
+            "bg-white shadow-lg border border-slate-200 rounded-xl p-4 w-72 animate-slide-up cursor-pointer";
+        div.innerHTML = `
+            <p class="font-bold text-slate-900">${title}</p>
+            <p class="text-sm text-slate-600 truncate">${message}</p>
+        `;
+    
+        div.onclick = () => {
+            window.location.href = `messages.html?user=${senderId}`;
+        };
+    
+        container.appendChild(div);
+    
+        setTimeout(() => {
+            div.remove();
+        }, 4000);
+    }
+    </script>
+    
+    <style>
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+    .animate-slide-up {
+      animation: slide-up 0.3s ease-out;
+    }
+    </style>
     <!-- Scripts -->
     <script>
         // This script tag is intentionally left for lucide icons initialization if needed later.
         // All main logic is moved to the module script below.
     </script>
-
     <!-- Firebase -->
     <script type="module">
     // FIX 1: Changed "../Data" to "./Data" so imports work from the root folder
@@ -687,7 +723,37 @@
             if (currentPage === 0) fetchPosts();
 
             // Start listening for notifications
-            listenForNotifications(user.uid);
+            // --- GLOBAL REALTIME NOTIFICATION FOR NEW MESSAGES ---
+            const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+            const playSound = () => notificationSound.play().catch(() => {});
+
+            // Request audio permission on first user interaction
+            document.addEventListener('click', playSound, { once: true });
+
+            const messageListener = supabase.channel('public:messages:feed')
+              .on('postgres_changes', {
+                  event: 'INSERT',
+                  schema: 'public',
+                  table: 'messages',
+                  filter: `receiver_id=eq.${user.uid}`
+              }, async (payload) => {
+            
+                  const msg = payload.new;
+            
+                  // Play notification sound
+                  playSound();
+            
+                  // Show toast-notification (fetch sender name for better UX)
+                  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', msg.sender_id).single();
+                  const senderName = profile?.full_name || 'Someone';
+                  showToast(`New message from ${senderName}`, msg.content, msg.sender_id);
+            
+                  // Increment unread badge at top navbar
+                  const badge = document.getElementById("msg-unread-badge");
+                  badge.classList.remove("hidden");
+                  badge.textContent = parseInt(badge.textContent || "0") + 1;
+              })
+              .subscribe();
         } else {
             window.location.href = 'Auth/login.html';
         }
