@@ -29,56 +29,61 @@
     <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <!-- Left Nav -->
-            <div class="flex items-center gap-4">
-                <a href="index.html">
+            <div class="flex items-center gap-4 lg:gap-8">
+                <a href="#" id="mobile-menu-btn">
                     <img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" />
                 </a>
-                <div class="relative hidden sm:block">
+                <div class="relative hidden md:block" id="desktop-search-wrapper">
                     <i data-lucide="search" class="w-4 h-4 absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"></i>
                     <input type="text"
-                        class="search-bar bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                        class="search-bar bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="Search unemployed legends..." />
+                    <!-- Search Results Dropdown -->
+                    <div class="search-results hidden absolute mt-2 w-full bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-10"></div>
                 </div>
             </div>
 
             <!-- Right Nav -->
             <div class="flex items-center gap-2 sm:gap-4 text-slate-500">
-                <a href="feed.html" class="flex flex-col items-center gap-0.5 px-2 text-brand-blue" title="Home">
-                    <i data-lucide="home" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Home</span>
+                <a href="#" class="md:hidden p-2 rounded-full hover:bg-slate-100" id="mobile-search-btn">
+                    <i data-lucide="search" class="w-6 h-6"></i>
                 </a>
-                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
+                <a href="save.html" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-blue-600"
+                    title="Saved Posts">
+                    <i data-lucide="bookmark" class="w-6 h-6"></i>
+                    <span class="text-xs font-bold hidden sm:block">Saved</span>
+                </a>
+                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-blue-600"
                     title="Groups">
                     <i data-lucide="users-2" class="w-6 h-6"></i>
                     <span class="text-xs font-bold hidden sm:block">Groups</span>
                 </a>
-                <a href="#post-content" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
-                    title="Create Post">
-                    <i data-lucide="plus-square" class="w-6 h-6"></i>
-                    <span class="text-xs font-bold hidden sm:block">Post</span>
-                </a>
-                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue"
+                <a href="messages.html" class="nav-link relative flex flex-col items-center gap-0.5 px-2 hover:text-blue-600"
                     title="Messaging">
                     <i data-lucide="message-square" class="w-6 h-6"></i>
+                    <span id="message-notification-dot" class="absolute top-0 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white hidden"></span>
                     <span class="text-xs font-bold hidden sm:block">Messaging</span>
                 </a>
-                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-brand-blue relative">
+                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative">
                     <i data-lucide="bell" class="w-6 h-6"></i>
                     <span class="text-xs font-bold hidden sm:block">Notifications</span>
                 </a>
                 <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <!-- Profile Link/Dropdown -->
+                <a href="profile.html" id="nav-profile-link" class="sm:hidden">
+                    <img id="nav-profile-img-mobile" src="src/assets/avatar-placeholder.png" class="w-8 h-8 rounded-full" />
+                </a>
                 <!-- Profile Dropdown -->
-                <div class="relative group">
+                <div class="relative group hidden sm:block" id="profile-menu">
                     <!-- Dropdown Trigger -->
                     <button class="flex flex-col items-center gap-0.5 px-2 text-slate-500 hover:text-brand-blue"
                         title="Profile">
-                        <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
-                            class="w-6 h-6 rounded-full" />
+                        <img id="nav-profile-img" src="src/assets/avatar-placeholder.png" class="w-6 h-6 rounded-full" />
                         <span id="nav-profile-name" class="text-xs font-bold hidden sm:block">Me</span>
                     </button>
 
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-1
+                    <div class="absolute right-0 sm:right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-1
                                 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200
                                 transform origin-top-right -translate-y-2 group-hover:translate-y-0">
                         <div class="px-4 py-3 border-b border-slate-100">
@@ -86,7 +91,7 @@
                             </p>
                             <p id="dropdown-user-email" class="text-xs text-slate-500 truncate">...</p>
                         </div>
-                        <a href="profile.html"
+                        <a href="profile.html" id="view-profile-link"
                             class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-blue">View
                             Profile</a>
                         <a href="#" id="nav-logout-btn"
@@ -95,7 +100,53 @@
                 </div>
             </div>
         </div>
+        <!-- Mobile Search Bar (hidden by default) -->
+        <div id="mobile-search-container" class="px-4 pb-3 md:hidden hidden">
+            <div class="relative">
+                <div class="relative" id="mobile-search-wrapper">
+                    <i data-lucide="search" class="w-4 h-4 absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" class="search-bar bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Search..." />
+                    <div class="search-results hidden absolute mt-2 w-full bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-10"></div>
+                </div>
+            </div>
+        </div>
     </nav>
+
+    <!-- MOBILE SIDEBAR -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black/50 hidden lg:hidden"></div>
+    <aside id="mobile-sidebar"
+        class="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg p-6 transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto">
+        <!-- Close Button -->
+        <button id="close-sidebar-btn" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <!-- Logo -->
+        <a href="index.html" class="mb-8 block">
+            <img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" />
+        </a>
+
+        <!-- Sidebar Content -->
+        <div class="space-y-6">
+            <!-- User Mini Profile -->
+            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <div class="h-16 bg-slate-200"></div>
+                <div class="p-4 text-center -mt-8">
+                    <img id="sidebar-profile-img-mobile" src="src/assets/avatar-placeholder.png"
+                        class="w-16 h-16 rounded-full mx-auto border-4 border-white" />
+                    <h3 id="sidebar-profile-name-mobile" class="font-bold mt-2">Loading...</h3>
+                    <p id="sidebar-profile-email-mobile" class="text-sm text-slate-500">...</p>
+                </div>
+            </div>
+            <!-- Quick Navigation -->
+            <div id="mobile-quick-nav"></div>
+            <!-- Trending -->
+            <div id="mobile-trending"></div>
+            <!-- Suggested Groups -->
+            <div id="mobile-groups"></div>
+        </div>
+    </aside>
+
 
     <!-- MAIN FEED LAYOUT -->
     <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -120,9 +171,9 @@
                     </div>
                 </div>
                 <!-- Quick Navigation -->
-                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                <div id="desktop-quick-nav" class="bg-white rounded-lg border border-slate-200 p-4">
                     <ul class="space-y-1 text-sm font-medium text-slate-600">
-                        <li><a href="feed.html"
+                        <li><a href="feed.html" 
                                 class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-50 text-brand-blue bg-slate-100"><i
                                     data-lucide="layout-dashboard" class="w-5 h-5"></i> Unemployed Feed</a></li>
                         <li><a href="groups.html"
@@ -142,7 +193,7 @@
         <!-- FEED -->
         <main class="col-span-1 lg:col-span-2 space-y-6">
             <!-- Create Post Box -->
-            <div class="bg-white p-5 rounded-2xl shadow mb-6 border border-slate-200">
+            <div id="post-content" class="bg-white p-5 rounded-2xl shadow mb-6 border border-slate-200 scroll-mt-20">
                 <div class="flex items-start gap-4 mb-4">
                     <img id="create-post-avatar" src="src/assets/avatar-placeholder.png"
                         class="w-12 h-12 rounded-full flex-shrink-0" />
@@ -181,7 +232,7 @@
         <!-- RIGHT SIDEBAR -->
         <aside class="hidden lg:block col-span-1">
             <div class="space-y-6">
-                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                <div id="desktop-trending" class="bg-white rounded-lg border border-slate-200 p-4">
                     <h3 class="font-bold mb-4">Trending on NotWorking 🔥</h3>
                     <ul class="space-y-2 text-sm text-slate-600">
                         <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#Rejected101</a></li>
@@ -192,7 +243,7 @@
                         <li><a href="#" class="nav-link hover:text-brand-blue font-medium">#AppliedTo100Jobs</a></li>
                     </ul>
                 </div>
-                <div class="bg-white rounded-lg border border-slate-200 p-4">
+                <div id="desktop-groups" class="bg-white rounded-lg border border-slate-200 p-4">
                     <h3 class="font-bold mb-4">Suggested Groups</h3>
                     <div class="flex items-center gap-3">
                         <div
@@ -228,6 +279,7 @@
     let hasMore = true;
     let currentUser = null;
 
+    let searchTimeout;
     // --- HELPER: UPLOAD FILE ---
     async function uploadFile(file, userId) {
         if (!currentUser) return null;
@@ -392,6 +444,18 @@
         }
     }
 
+    async function getPostLikeStates(postIds) {
+        if (!currentUser || postIds.length === 0) return {};
+        const { data, error } = await supabase
+            .from('likes')
+            .select('post_id')
+            .eq('user_id', currentUser.uid)
+            .in('post_id', postIds);
+        
+        if (error) return {};
+        return data.reduce((acc, like) => ({ ...acc, [like.post_id]: true }), {});
+    }
+
     // --- RENDER POST ---
     function createPostElement(post) {
         const isOwner = currentUser && post.user_id === currentUser.uid;
@@ -401,6 +465,16 @@
         const avatar = post.profiles?.avatar_url || 'src/assets/avatar-placeholder.png';
         const name = post.profiles?.full_name || 'Anonymous';
         const username = post.profiles?.username || '';
+
+        // These will be set after fetching like states
+        const isLiked = post.is_liked_by_user;
+        const isSaved = post.is_saved_by_user;
+
+        // ROBUST AVATAR LOGIC
+        // 1. Try User Photo, 2. Try Nav Image, 3. Default Placeholder
+        let myAvatar = 'src/assets/avatar-placeholder.png';
+        if (currentUser && currentUser.photoURL) myAvatar = currentUser.photoURL;
+        else if (document.getElementById('nav-profile-img')?.src) myAvatar = document.getElementById('nav-profile-img').src;
 
         const div = document.createElement('div');
         div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group";
@@ -421,7 +495,8 @@
             ${deleteBtn}
             <div class="flex items-start gap-4">
                 <a href="profile.html?username=${username}" class="flex-shrink-0">
-                    <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-200" />
+                    <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-200" 
+                         onerror="this.src='src/assets/avatar-placeholder.png'">
                 </a>
                 <div class="w-full">
                     <div class="flex justify-between items-start">
@@ -434,21 +509,23 @@
                     ${mediaHTML}
                     
                     <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm font-medium">
-                        <button class="like-btn flex items-center gap-2 hover:text-red-500 transition" data-post-id="${post.id}">
-                            <i data-lucide="heart" class="w-5 h-5"></i> <span>${likeCount}</span>
+                        <button class="like-btn flex items-center gap-2 hover:text-red-500 transition ${isLiked ? 'text-red-500' : ''}" data-post-id="${post.id}">
+                            <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-current' : ''}"></i> <span>${likeCount}</span>
                         </button>
                         <button class="comment-btn flex items-center gap-2 hover:text-blue-500 transition" data-post-id="${post.id}">
                             <i data-lucide="message-circle" class="w-5 h-5"></i> <span>${commentCount}</span>
                         </button>
-                        <button class="save-btn flex items-center gap-2 hover:text-green-500 transition" data-post-id="${post.id}">
-                            <i data-lucide="bookmark" class="w-5 h-5"></i> <span>Save</span>
+                        <button class="save-btn flex items-center gap-2 hover:text-green-500 transition ${isSaved ? 'text-green-500' : ''}" data-post-id="${post.id}">
+                            <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-current' : ''}"></i> <span>${isSaved ? 'Saved' : 'Save'}</span>
                         </button>
                     </div>
 
                     <div class="comment-section hidden mt-4 pt-4 border-t border-slate-100 bg-slate-50/50 rounded-xl p-4">
                         <div class="comments-list max-h-60 overflow-y-auto mb-4"></div>
                         <form class="comment-form flex gap-2 items-center" data-post-id="${post.id}">
-                            <img src="${document.getElementById('nav-profile-img').src}" class="w-8 h-8 rounded-full border border-slate-200">
+                            <img src="${myAvatar}" 
+                                 class="current-user-avatar w-8 h-8 rounded-full border border-slate-200 object-cover"
+                                 onerror="this.src='src/assets/avatar-placeholder.png'">
                             <input type="text" placeholder="Write a comment..." class="flex-1 bg-white border border-slate-200 rounded-full px-4 py-2 text-sm focus:outline-none">
                             <button type="submit" class="text-brand-blue font-bold text-sm px-2">Post</button>
                         </form>
@@ -460,27 +537,58 @@
     }
 
     // --- FETCH POSTS (Safe Version) ---
-    async function fetchPosts() {
+    async function fetchPosts(searchTerm = '') {
         if (isLoading || !hasMore) return;
         isLoading = true;
         const spinner = document.getElementById('loading-spinner');
         const container = document.getElementById("feed-posts-container");
+        const sentinelSpinner = document.querySelector('#scroll-sentinel i');
+
+        if (currentPage > 0) {
+            sentinelSpinner.classList.remove('opacity-0');
+        } else {
+            if (spinner) spinner.classList.remove('hidden');
+        }
+
+        if (searchTerm) {
+            document.getElementById('feed-title').textContent = `Posts matching "${searchTerm}"`;
+        }
 
         try {
             const from = currentPage * POSTS_PER_PAGE;
             const to = from + POSTS_PER_PAGE - 1;
 
             // Updated Query: Removed ":user_id" alias to avoid potential relationship bugs
-            const { data: posts, error } = await supabase.from("posts")
+            let { data: posts, error } = await supabase.from("posts")
                 .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                .ilike('content', `%${searchTerm}%`) // Filter posts by content
                 .order("created_at", { ascending: false })
                 .range(from, to);
+
+            if (posts && posts.length > 0) {
+                const postIds = posts.map(p => p.id);
+                const [likeStates, saveStates] = await Promise.all([
+                    getPostLikeStates(postIds),
+                    getPostSaveStates(postIds)
+                ]);
+
+                posts = posts.map(post => ({
+                    ...post,
+                    is_liked_by_user: !!likeStates[post.id],
+                    is_saved_by_user: !!saveStates[post.id]
+                }));
+            }
 
             if (error) throw error;
 
             // Hide spinner manually if it exists
-            if (spinner) spinner.classList.add('hidden');
-
+            if (spinner && !spinner.classList.contains('hidden')) {
+                spinner.classList.add('hidden');
+            }
+            if (sentinelSpinner && !sentinelSpinner.classList.contains('opacity-0')) {
+                sentinelSpinner.classList.add('opacity-0');
+            }
+            
             if (posts && posts.length > 0) {
                 posts.forEach(post => {
                     const el = createPostElement(post);
@@ -488,6 +596,9 @@
                     lucide.createIcons({ nodes: [el] });
                 });
                 currentPage++;
+                if (posts.length < POSTS_PER_PAGE) {
+                    hasMore = false;
+                }
             } else if (currentPage === 0) {
                 container.innerHTML = '<div class="text-center py-10 text-slate-500">No posts yet. Be the first!</div>';
                 hasMore = false;
@@ -508,16 +619,31 @@
         }
     }
 
+    async function getPostSaveStates(postIds) {
+        if (!currentUser || postIds.length === 0) return {};
+        const { data, error } = await supabase
+            .from('saved_posts')
+            .select('post_id')
+            .eq('user_id', currentUser.uid)
+            .in('post_id', postIds);
+
+        if (error) return {};
+        return data.reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
+    }
+
     // --- SCROLL LISTENER (Simple Infinite Scroll) ---
     window.addEventListener('scroll', () => {
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-            fetchPosts();
+            // Only fetch more if not in a search context for simplicity
+            const currentSearch = document.querySelector('.search-bar').value;
+            if (!currentSearch) fetchPosts();
         }
     });
 
     // --- INIT ---
     onIdTokenChanged(auth, async (user) => {
         if (user) {
+            const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
             currentUser = user;
             await supabase.auth.setSession({ access_token: await user.getIdToken() });
 
@@ -536,11 +662,32 @@
             updateEl('sidebar-profile-name', 'textContent', name);
             updateEl('sidebar-profile-email', 'textContent', email);
 
+            // Mobile Nav Profile
+            updateEl('nav-profile-img-mobile', 'src', photo);
+            if(profile) document.getElementById('nav-profile-link').href = `profile.html?username=${profile.username}`;
+
+            // Mobile Sidebar
+            updateEl('sidebar-profile-img-mobile', 'src', photo);
+            updateEl('sidebar-profile-name-mobile', 'textContent', name);
+            updateEl('sidebar-profile-email-mobile', 'textContent', email);
+            document.getElementById('mobile-quick-nav').innerHTML = document.getElementById('desktop-quick-nav').innerHTML;
+            document.getElementById('mobile-trending').innerHTML = document.getElementById('desktop-trending').innerHTML;
+            document.getElementById('mobile-groups').innerHTML = document.getElementById('desktop-groups').innerHTML;
+
             updateEl('dropdown-user-name', 'textContent', name);
             updateEl('dropdown-user-email', 'textContent', email);
+            if(profile) document.getElementById('view-profile-link').href = `profile.html?username=${profile.username}`;
+
+            // FIX: Refresh all comment avatars that might have loaded before auth was ready
+            document.querySelectorAll('.current-user-avatar').forEach(img => {
+                img.src = photo;
+            });
 
             // Start Feed
             if (currentPage === 0) fetchPosts();
+
+            // Start listening for notifications
+            listenForNotifications(user.uid);
         } else {
             window.location.href = 'Auth/login.html';
         }
@@ -567,6 +714,32 @@
     if(logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
     const navLogout = document.getElementById('nav-logout-btn');
     if(navLogout) navLogout.addEventListener('click', () => signOut(auth));
+
+    // Mobile Search
+    const mobileSearchBtn = document.getElementById('mobile-search-btn');
+    const mobileSearchContainer = document.getElementById('mobile-search-container');
+    if(mobileSearchBtn) mobileSearchBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        mobileSearchContainer.classList.toggle('hidden');
+    });
+
+    // Mobile Sidebar Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    const toggleSidebar = () => {
+        mobileSidebar.classList.toggle('-translate-x-full');
+        sidebarOverlay.classList.toggle('hidden');
+    };
+
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleSidebar();
+    });
+    closeSidebarBtn.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
 
     // Realtime Updates
     supabase.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
@@ -622,6 +795,72 @@
         }
     }).subscribe();
         
+    // --- SEARCH LOGIC ---
+    async function performSearch(term, resultsContainer) {
+        if (term.length < 2) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.add('hidden');
+            return;
+        }
+
+        // Search for users
+        const { data: users, error } = await supabase
+            .from('profiles')
+            .select('username, full_name, avatar_url')
+            .ilike('username', `%${term}%`)
+            .limit(4);
+
+        resultsContainer.innerHTML = '';
+        let hasResults = false;
+
+        if (users && users.length > 0) {
+            hasResults = true;
+            users.forEach(user => {
+                const userEl = document.createElement('a');
+                userEl.href = `profile.html?username=${user.username}`;
+                userEl.className = 'flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50';
+                userEl.innerHTML = `
+                    <img src="${user.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-8 h-8 rounded-full object-cover">
+                    <div>
+                        <p class="font-bold">${user.full_name}</p>
+                        <p class="text-xs text-slate-500">@${user.username}</p>
+                    </div>
+                `;
+                resultsContainer.appendChild(userEl);
+            });
+        }
+
+        // Add option to search for posts
+        const postSearchEl = document.createElement('a');
+        postSearchEl.href = '#';
+        postSearchEl.className = 'block px-4 py-2 text-sm font-bold text-blue-600 hover:bg-slate-50 border-t border-slate-100';
+        postSearchEl.innerHTML = `Search for posts containing "${term}"`;
+        postSearchEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('feed-posts-container').innerHTML = '';
+            currentPage = 0;
+            hasMore = true;
+            fetchPosts(term);
+            resultsContainer.classList.add('hidden');
+            document.querySelectorAll('.search-bar').forEach(input => input.blur());
+        });
+        resultsContainer.appendChild(postSearchEl);
+        hasResults = true;
+
+        if (hasResults) {
+            resultsContainer.classList.remove('hidden');
+        }
+    }
+
+    document.querySelectorAll('.search-bar').forEach(input => {
+        input.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value;
+            const resultsContainer = e.target.parentElement.querySelector('.search-results');
+            searchTimeout = setTimeout(() => performSearch(searchTerm, resultsContainer), 300);
+        });
+    });
+
     lucide.createIcons();
 </script>
 </body>

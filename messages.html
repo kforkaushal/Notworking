@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - NotWorking</title>
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
+            <div class="flex items-center gap-4">
+                <a href="feed.html"
+                    class="text-slate-500 hover:text-blue-600 font-bold text-sm flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-5 h-5 sm:hidden"></i>
+                    <span class="hidden sm:inline">Back to Feed</span>
+                </a>
+                <a href="profile.html" id="nav-profile-link"><img id="nav-profile-img"
+                        src="src/assets/avatar-placeholder.png"
+                        class="w-8 h-8 rounded-full border border-slate-200" /></a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="h-[calc(100vh-10rem)] bg-white border border-slate-200 rounded-2xl shadow-sm flex overflow-hidden">
+            <!-- Conversations List -->
+            <aside id="conversations-list"
+                class="w-full md:w-1/3 lg:w-1/4 border-r border-slate-200 bg-slate-50/50 overflow-y-auto">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Messages</h2>
+                    <button id="new-message-btn" class="p-2 rounded-full hover:bg-slate-200" title="New Message">
+                        <i data-lucide="square-pen" class="w-5 h-5 text-slate-600"></i>
+                    </button>
+                </div>
+                <div id="convos-container">
+                    <div class="p-8 text-center text-slate-400">Loading conversations...</div>
+                </div>
+            </aside>
+
+            <!-- Chat Window -->
+            <section id="chat-window" class="flex-1 flex flex-col hidden md:flex">
+                <!-- Placeholder -->
+                <div id="chat-placeholder"
+                    class="flex-1 flex flex-col items-center justify-center text-center text-slate-400 p-4">
+                    <i data-lucide="message-square" class="w-16 h-16 mb-4"></i>
+                    <h3 class="font-bold text-lg">Select a conversation</h3>
+                    <p class="max-w-xs">Choose from your existing conversations on the left or start a new one from a
+                        user's profile.</p>
+                </div>
+
+                <!-- Active Chat -->
+                <div id="active-chat-container" class="hidden flex-1 flex-col overflow-hidden">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-b border-slate-200 flex items-center gap-3">
+                        <button id="back-to-convos" class="md:hidden p-1 -ml-1 text-slate-500 hover:text-slate-800"><i
+                                data-lucide="arrow-left"></i></button>
+                        <img id="chat-header-avatar" src="src/assets/avatar-placeholder.png"
+                            class="w-10 h-10 rounded-full">
+                        <div>
+                            <h3 id="chat-header-name" class="font-bold"></h3>
+                            <p id="chat-header-username" class="text-xs text-slate-500"></p>
+                        </div>
+                    </div>
+                    <!-- Messages -->
+                    <div id="messages-container" class="flex-1 p-6 space-y-4 overflow-y-auto">
+                        <!-- Messages will be injected here -->
+                    </div>
+                    <!-- Typing Indicator -->
+                    <div id="typing-indicator" class="px-6 pb-2 h-6 hidden">
+                        <div class="flex items-center gap-2 text-sm text-slate-500">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                            <span class="ml-1">typing...</span>
+                        </div>
+                    </div>
+                    <!-- Message Input -->
+                    <div class="p-4 border-t border-slate-200 bg-slate-50">
+                        <form id="message-form" class="flex items-center gap-3">
+                            <input id="message-input" type="text" placeholder="Type a message..."
+                                class="w-full p-3 border border-slate-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                autocomplete="off">
+                            <button type="submit"
+                                class="p-3 bg-slate-900 text-white rounded-full hover:bg-black transition">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- New Message Modal -->
+    <div id="new-message-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl w-full max-w-md p-6 m-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">New Message</h3>
+                <button id="close-modal-btn" class="p-1 rounded-full hover:bg-slate-100">
+                    <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+                </button>
+            </div>
+            <div>
+                <input id="user-search-input" type="text" placeholder="Search for a user..."
+                    class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    autocomplete="off">
+                <div id="user-search-results" class="mt-4 max-h-60 overflow-y-auto">
+                    <!-- Search results will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from './Data/firebase-client.js';
+        import supabase from './Data/supabase-client.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        let currentUser = null;
+        let activeConversationUserId = null;
+        let messageSubscription = null;
+    let typingTimeout;
+
+        let searchTimeout;
+        const convosList = document.getElementById('conversations-list');
+        const chatWindow = document.getElementById('chat-window');
+
+        // --- UI HELPERS ---
+        const showChatWindow = () => {
+            convosList.classList.add('hidden', 'md:block');
+            chatWindow.classList.remove('hidden');
+        };
+
+        const showConvosList = () => {
+            convosList.classList.remove('hidden');
+            chatWindow.classList.add('hidden', 'md:flex');
+        };
+
+        document.getElementById('back-to-convos').addEventListener('click', showConvosList);
+
+        // --- MESSAGE RENDERING ---
+        function createMessageElement(message, isSender) {
+            const alignClass = isSender ? 'justify-end' : 'justify-start';
+            const colorClass = isSender ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-800';
+            const div = document.createElement('div');
+            div.className = `flex ${alignClass}`;
+            div.innerHTML = `<div class="${colorClass} max-w-md p-3 rounded-2xl">${message.content}</div>`;
+            return div;
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // --- DATA FETCHING & REALTIME ---
+        async function loadConversations() {
+            const container = document.getElementById('convos-container');
+            if (!currentUser) return;
+
+            const { data, error } = await supabase.rpc('get_conversations', { user_id_param: currentUser.uid });
+
+            if (error) {
+                console.error('Error fetching conversations:', error);
+                container.innerHTML = `<div class="p-4 text-red-500">Error loading.</div>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400">No messages yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(convo => {
+                const div = document.createElement('div');
+                div.className = 'p-4 flex items-center gap-3 cursor-pointer hover:bg-slate-100 border-b border-slate-200';
+                div.dataset.userId = convo.other_user_id;
+                div.innerHTML = `
+                <img src="${convo.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-12 h-12 rounded-full object-cover">
+                <div class="flex-1 overflow-hidden pr-2">
+                    <div class="flex justify-between items-start">
+                        <p class="font-bold truncate">${convo.full_name}</p>
+                        ${convo.unread_count > 0 ? `<span class="unread-badge text-xs bg-red-500 text-white font-bold w-5 h-5 flex items-center justify-center rounded-full">${convo.unread_count}</span>` : ''}
+                    </div>
+                    <p class="last-message text-sm text-slate-500 truncate">${convo.last_message_content}</p>
+                </div>
+            `;
+                div.addEventListener('click', () => loadConversation(convo.other_user_id, convo.full_name, convo.username, convo.avatar_url));
+                container.appendChild(div);
+            });
+        }
+
+        async function loadConversation(otherUserId, name, username, avatar) {
+            // 1. Mark messages as read
+            await supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('sender_id', otherUserId)
+                .eq('receiver_id', currentUser.uid);
+            
+            // Remove badge
+            document.querySelector(`[data-user-id="${otherUserId}"] .unread-badge`)?.remove();
+
+            activeConversationUserId = otherUserId;
+            showChatWindow();
+
+            // Unsubscribe from previous channel
+            if (messageSubscription) {
+                supabase.removeChannel(messageSubscription);
+            }
+
+            // UI Updates
+            document.getElementById('chat-placeholder').classList.add('hidden');
+            document.getElementById('active-chat-container').classList.remove('hidden');
+            document.getElementById('active-chat-container').classList.add('flex');
+            document.getElementById('chat-header-avatar').src = avatar || 'src/assets/avatar-placeholder.png';
+            document.getElementById('chat-header-name').textContent = name;
+            document.getElementById('chat-header-username').textContent = `@${username}`;
+
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.innerHTML = '<div class="p-4 text-center text-slate-400">Loading messages...</div>';
+
+            // 2. Fetch History
+            const { data: messages, error } = await supabase
+                .from('messages')
+                .select('*')
+                .or(`and(sender_id.eq.${currentUser.uid},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUser.uid})`)
+                .order('created_at', { ascending: true });
+
+            messagesContainer.innerHTML = '';
+            if (messages) {
+                messages.forEach(msg => {
+                    const isSender = msg.sender_id === currentUser.uid;
+                    messagesContainer.appendChild(createMessageElement(msg, isSender));
+                });
+                scrollToBottom();
+            }
+
+            // 3. REALTIME SETUP (THE FIX)
+            
+            // Generate a unique Room ID that is SAME for both users (sort the IDs)
+            // Example: "chat-userA-userB" is the same as "chat-userB-userA" if sorted
+            const roomIds = [currentUser.uid, otherUserId].sort();
+            const roomName = `chat-${roomIds[0]}-${roomIds[1]}`;
+
+            messageSubscription = supabase.channel(roomName)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    // FIX: This filter tells Supabase to only send us messages that are part of this specific conversation.
+                    filter: `or(and(sender_id.eq.${currentUser.uid},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUser.uid}))`
+                }, payload => {
+                    const newMessage = payload.new;
+                    // Since the filter is now working, we only get relevant messages.
+                    // We just need to make sure we don't re-add the message we just sent.
+                    if (newMessage.sender_id !== currentUser.uid) {
+                        messagesContainer.appendChild(createMessageElement(newMessage, false));
+                        scrollToBottom();
+                    }
+                })
+                .subscribe();
+
+            // Typing Indicators (Now works because RoomName is consistent)
+            messageSubscription.on('broadcast', { event: 'typing' }, (payload) => {
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (payload.sender_id === activeConversationUserId) {
+                    if (payload.is_typing) {
+                        typingIndicator.classList.remove('hidden');
+                        scrollToBottom();
+                    } else {
+                        typingIndicator.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+
+            if (!content || !currentUser || !activeConversationUserId) return;
+
+            const messagePayload = {
+                sender_id: currentUser.uid,
+                receiver_id: activeConversationUserId,
+                content: content
+            };
+
+            // Optimistic UI update
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.appendChild(createMessageElement(messagePayload, true));
+            scrollToBottom();
+            input.value = '';
+
+            const { error } = await supabase.from('messages').insert(messagePayload);
+            if (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message.');
+                // Optionally, add logic to show a "failed" state on the message
+            }
+        }
+
+        document.getElementById('message-form').addEventListener('submit', handleSendMessage);
+
+    // --- TYPING INDICATOR LOGIC ---
+    const messageInput = document.getElementById('message-input');
+    messageInput.addEventListener('input', () => {
+        if (!messageSubscription) return;
+
+        // Broadcast that we are typing
+        messageSubscription.send({
+            type: 'broadcast',
+            event: 'typing',
+            is_typing: true,
+            sender_id: currentUser.uid
+        });
+
+        // Set a timeout to broadcast that we stopped typing
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
+        }, 2000); // 2-second delay
+    });
+
+        // --- NEW MESSAGE MODAL & SEARCH LOGIC ---
+        const newMessageModal = document.getElementById('new-message-modal');
+        const newMessageBtn = document.getElementById('new-message-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const userSearchInput = document.getElementById('user-search-input');
+        const userSearchResults = document.getElementById('user-search-results');
+
+        const openModal = () => newMessageModal.classList.replace('hidden', 'flex');
+        const closeModal = () => {
+            newMessageModal.classList.replace('flex', 'hidden');
+            userSearchInput.value = '';
+            userSearchResults.innerHTML = '';
+        };
+
+        newMessageBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        newMessageModal.addEventListener('click', (e) => {
+            if (e.target === newMessageModal) closeModal();
+        });
+
+        async function searchUsers(term) {
+            if (term.length < 2) {
+                userSearchResults.innerHTML = '';
+                return;
+            }
+
+            const { data: users, error } = await supabase
+                .from('profiles')
+                .select('id, full_name, username, avatar_url')
+                .or(`full_name.ilike.%${term}%,username.ilike.%${term}%`)
+                .neq('id', currentUser.uid) // Exclude self from search
+                .limit(10);
+
+            userSearchResults.innerHTML = '';
+            if (users && users.length > 0) {
+                users.forEach(user => {
+                    const userEl = document.createElement('div');
+                    userEl.className = 'p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-100 rounded-lg';
+                    userEl.innerHTML = `
+                        <img src="${user.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p class="font-bold">${user.full_name}</p>
+                            <p class="text-sm text-slate-500">@${user.username}</p>
+                        </div>
+                    `;
+                    userEl.addEventListener('click', () => {
+                        loadConversation(user.id, user.full_name, user.username, user.avatar_url);
+                        closeModal();
+                    });
+                    userSearchResults.appendChild(userEl);
+                });
+            } else {
+                userSearchResults.innerHTML = '<p class="p-3 text-sm text-slate-500">No users found.</p>';
+            }
+        }
+
+        userSearchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchUsers(e.target.value), 300);
+        });
+
+        // --- INITIALIZATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await supabase.auth.setSession({ access_token: await user.getIdToken() });
+
+                // Update nav bar
+                const { data: userProfile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
+                const navProfileImg = document.getElementById('nav-profile-img');
+                navProfileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                if (userProfile) document.getElementById('nav-profile-link').href = `profile.html?username=${userProfile.username}`;
+
+                // Load user's conversations
+                await loadConversations();
+
+                // Check if URL has a 'user' param to auto-open a conversation
+                const params = new URLSearchParams(window.location.search);
+                const userIdToOpen = params.get('user');
+                if (userIdToOpen) {
+                    const { data: profileToOpen, error } = await supabase.from('profiles').select('*').eq('id', userIdToOpen).single();
+                    if (profileToOpen) {
+                        loadConversation(profileToOpen.id, profileToOpen.full_name, profileToOpen.username, profileToOpen.avatar_url);
+                    }
+                }
+
+            } else {
+                window.location.href = 'Auth/login.html';
+            }
+        });
+
+        lucide.createIcons();
+
+    </script>
+</body>
+
+</html>

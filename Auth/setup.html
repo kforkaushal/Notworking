@@ -116,19 +116,30 @@
         let newAvatarFile = null;
 
         // Check auth state
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 // When the user is authenticated with Firebase,
                 // get the JWT and set it for Supabase.
-                user.getIdToken().then(token => {
-                    supabase.auth.setSession({
-                        access_token: token,
-                        refresh_token: user.refreshToken
-                    });
+                const { data: { session } } = await supabase.auth.setSession({
+                    access_token: await user.getIdToken(),
+                    refresh_token: user.refreshToken,
                 });
-                // Pre-fill name from Google/Firebase auth if available
-                document.getElementById('fullname').value = user.displayName || '';
+
+                // Check if the user already has a profile.
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', user.uid)
+                    .single();
+
+                if (profile) {
+                    // Profile exists, redirect them away from setup.
+                    window.location.href = '/profile.html';
+                } else {
+                    // Pre-fill name from Google/Firebase auth if available
+                    document.getElementById('fullname').value = user.displayName || '';
+                }
             } else {
                 // Not logged in, redirect to login
                 window.location.href = '/Auth/login.html';
@@ -161,13 +172,13 @@
 
             try {
                 let avatarUrl = currentUser.photoURL || `..${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/src/assets/avatar.png`;
-                const newUsername = formProps.username.trim();
+                const newUsername = formProps.username.trim().toLowerCase();
 
                 // 0. Check if username is unique before doing anything else
                 const { data: existingUser, error: checkError } = await supabase
                     .from('profiles')
                     .select('username')
-                    .eq('username', newUsername)
+                    .eq('username', newUsername) // Check against the lowercase version
                     .single();
 
                 if (existingUser) {
