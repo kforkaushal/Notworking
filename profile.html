@@ -170,13 +170,18 @@
         async function createNotification(type, entityId, recipientId) {
             if (!currentUser || currentUser.uid === recipientId) return;
 
+            const payload = {
+                type,
+                user_id: recipientId,
+                actor_id: currentUser.uid
+            };
+            // For profile, we only have 'follow' which has no post_id
+            if (entityId && (type === 'like' || type === 'comment')) {
+                payload.post_id = entityId;
+            }
+
             try {
-                await supabase.from('notifications').insert({
-                    type,
-                    entity_id: entityId, // can be null for follows
-                    user_id: recipientId,
-                    actor_id: currentUser.uid
-                });
+                await supabase.from('notifications').insert(payload);
             } catch (error) {
                 console.error("Notification failed:", error);
             }

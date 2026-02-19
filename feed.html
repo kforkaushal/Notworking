@@ -482,13 +482,20 @@
         async function createNotification(type, entityId, recipientId) {
             if (!currentUser || currentUser.uid === recipientId) return; // Don't notify self
 
+            // Map entityId to post_id if applicable. For this app, only 'like' and 'comment' have entityId = post_id.
+            // 'follow' has no post_id.
+            const payload = {
+                type,
+                user_id: recipientId, // The receiver
+                actor_id: currentUser.uid // The trigger
+            };
+
+            if (type === 'like' || type === 'comment') {
+                payload.post_id = entityId; // entityId passed as post_id
+            }
+
             try {
-                await supabase.from('notifications').insert({
-                    type,
-                    entity_id: entityId,
-                    user_id: recipientId, // The receiver
-                    actor_id: currentUser.uid // The trigger
-                });
+                await supabase.from('notifications').insert(payload);
             } catch (error) {
                 console.error("Notification failed:", error);
             }
