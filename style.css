@@ -5,6 +5,11 @@
     color: #222;
 }
 
+.text-brand-blue {
+    color: #2563eb;
+    /* Tailwind blue-600 */
+}
+
 /* Navbar */
 .landing-nav {
     display: flex;
@@ -255,6 +260,79 @@ footer {
     padding: 18px;
 }
 
-.trending-box ul {
-    padding-left: 18px;
+
+/* Mobile Bottom Nav */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #ddd;
+    padding: 10px 20px;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 4px;
+}
+
+.mobile-nav-item.active {
+    color: black;
+}
+
+.mobile-nav-item i {
+    width: 24px;
+    height: 24px;
+}
+
+/* Responsive Adjusments */
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    .feed-container {
+        width: 100%;
+        display: block;
+        margin-top: 0;
+    }
+
+    .left-sidebar,
+    .right-sidebar {
+        display: none;
+    }
+
+    .feed {
+        width: 100%;
+        margin-bottom: 70px;
+        /* Space for bottom nav */
+    }
+
+    .landing-nav {
+        padding: 15px 20px;
+    }
+
+    .hero {
+        padding: 40px 20px;
+    }
+
+    .features {
+        flex-direction: column;
+    }
+
+    .feature-box {
+        width: 100%;
+    }
 }

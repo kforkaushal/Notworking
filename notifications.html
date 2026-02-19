@@ -71,6 +71,32 @@
         </div>
     </main>
 
+    <!-- Mobile Bottom Nav -->
+    <div class="mobile-bottom-nav shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <a href="feed.html" class="mobile-nav-item">
+            <i data-lucide="home"></i>
+            <span>Home</span>
+        </a>
+        <a href="groups.html" class="mobile-nav-item">
+            <i data-lucide="users-2"></i>
+            <span>Groups</span>
+        </a>
+        <a href="save.html" class="mobile-nav-item">
+            <i data-lucide="bookmark"></i>
+            <span>Saved</span>
+        </a>
+        <a href="messages.html" class="mobile-nav-item relative">
+            <i data-lucide="message-square"></i>
+            <span>Msgs</span>
+            <span id="mobile-msg-badge" class="hidden absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+        </a>
+        <a href="profile.html" class="mobile-nav-item">
+            <img id="mobile-nav-profile-img" src="src/assets/avatar-placeholder.png"
+                class="w-6 h-6 rounded-full border border-slate-200">
+            <span>Profile</span>
+        </a>
+    </div>
+
     <script type="module">
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
