@@ -266,36 +266,9 @@
             </div>
 
             <!-- Container for posts, with a loading spinner initially -->
-            <!-- Container for posts -->
             <div id="feed-posts-container" class="space-y-6 min-h-[100px]">
-                <!-- Skeleton Loader (Initial State) -->
-                <div id="loading-skeleton" class="space-y-6">
-                    <!-- Skeleton Item 1 -->
-                    <div class="skeleton-card">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="skeleton skeleton-avatar"></div>
-                            <div class="w-1/3">
-                                <div class="skeleton skeleton-text" style="width: 60%;"></div>
-                                <div class="skeleton skeleton-text" style="width: 40%;"></div>
-                            </div>
-                        </div>
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text" style="width: 80%;"></div>
-                        <div class="skeleton h-48 w-full mt-4 rounded-lg"></div>
-                    </div>
-                    <!-- Skeleton Item 2 -->
-                    <div class="skeleton-card">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="skeleton skeleton-avatar"></div>
-                            <div class="w-1/3">
-                                <div class="skeleton skeleton-text" style="width: 50%;"></div>
-                                <div class="skeleton skeleton-text" style="width: 30%;"></div>
-                            </div>
-                        </div>
-                        <div class="skeleton skeleton-text"></div>
-                        <div class="skeleton skeleton-text" style="width: 90%;"></div>
-                    </div>
+                <div id="loading-spinner" class="flex justify-center items-center py-20">
+                    <i data-lucide="loader-2" class="w-12 h-12 text-slate-400 animate-spin"></i>
                 </div>
             </div>
             <div id="scroll-sentinel" class="h-20 flex justify-center items-center">
@@ -809,14 +782,15 @@
         async function fetchPosts(searchTerm = '') {
             if (isLoading || !hasMore) return;
             isLoading = true;
-            const skeleton = document.getElementById('loading-skeleton');
+            const spinner = document.getElementById('loading-spinner');
+            const container = document.getElementById("feed-posts-container");
             const sentinelSpinner = document.querySelector('#scroll-sentinel i');
 
             if (currentPage > 0) {
                 sentinelSpinner.classList.remove('opacity-0');
+            } else {
+                if (spinner) spinner.classList.remove('hidden');
             }
-            // Note: We don't manually toggle the skeleton here because it's the initial state of the container.
-            // We'll clear the container (which removes the skeleton) when the first page loads.
 
             if (searchTerm) {
                 document.getElementById('feed-title').textContent = `Posts matching "${searchTerm}"`;
