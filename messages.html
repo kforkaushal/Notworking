@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages - NotWorking</title>
+    <meta name="description" content="Private messages for the unemployed elite. Connect with others doing nothing.">
+    <meta name="robots" content="noindex, nofollow"> <!-- Private pages should be noindex -->
+    <meta name="language" content="English">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://notworking-in.vercel.app/messages.html" />
+
     <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -84,9 +90,12 @@
                     <!-- Typing Indicator -->
                     <div id="typing-indicator" class="px-6 pb-2 h-6 hidden">
                         <div class="flex items-center gap-2 text-sm text-slate-500">
-                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
-                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
-                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0s;">
+                            </div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.2s;">
+                            </div>
+                            <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style="animation-delay: 0.4s;">
+                            </div>
                             <span class="ml-1">typing...</span>
                         </div>
                     </div>
@@ -108,7 +117,8 @@
     </main>
 
     <!-- New Message Modal -->
-    <div id="new-message-modal" class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center backdrop-blur-sm">
+    <div id="new-message-modal"
+        class="fixed inset-0 z-50 bg-black/50 hidden items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-xl w-full max-w-md p-6 m-4 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">New Message</h3>
@@ -135,7 +145,7 @@
         let currentUser = null;
         let activeConversationUserId = null;
         let messageSubscription = null;
-    let typingTimeout;
+        let typingTimeout;
         let searchTimeout;
         const convosList = document.getElementById('conversations-list');
         const chatWindow = document.getElementById('chat-window');
@@ -227,7 +237,7 @@
                 .update({ is_read: true })
                 .eq('sender_id', otherUserId)
                 .eq('receiver_id', currentUser.uid);
-            
+
             // Remove badge
             document.querySelector(`[data-user-id="${otherUserId}"] .unread-badge`)?.remove();
 
@@ -330,27 +340,27 @@
 
         document.getElementById('message-form').addEventListener('submit', handleSendMessage);
 
-    // --- TYPING INDICATOR LOGIC ---
-    const messageInput = document.getElementById('message-input');
-    messageInput.addEventListener('input', () => {
-        // NOTE: Typing indicators require the 'broadcast' feature.
-        // This functionality is commented out as the request was to use database triggers.
-        // if (!messageSubscription || !currentUser) return;
-        //
-        // // Broadcast that we are typing
-        // messageSubscription.send({
-        //     type: 'broadcast',
-        //     event: 'typing',
-        //     is_typing: true,
-        //     sender_id: currentUser.uid
-        // });
-        //
-        // // Set a timeout to broadcast that we stopped typing
-        // clearTimeout(typingTimeout);
-        // typingTimeout = setTimeout(() => {
-        //     messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
-        // }, 2000); // 2-second delay
-    });
+        // --- TYPING INDICATOR LOGIC ---
+        const messageInput = document.getElementById('message-input');
+        messageInput.addEventListener('input', () => {
+            // NOTE: Typing indicators require the 'broadcast' feature.
+            // This functionality is commented out as the request was to use database triggers.
+            // if (!messageSubscription || !currentUser) return;
+            //
+            // // Broadcast that we are typing
+            // messageSubscription.send({
+            //     type: 'broadcast',
+            //     event: 'typing',
+            //     is_typing: true,
+            //     sender_id: currentUser.uid
+            // });
+            //
+            // // Set a timeout to broadcast that we stopped typing
+            // clearTimeout(typingTimeout);
+            // typingTimeout = setTimeout(() => {
+            //     messageSubscription.send({ type: 'broadcast', event: 'typing', is_typing: false, sender_id: currentUser.uid });
+            // }, 2000); // 2-second delay
+        });
 
         // --- NEW MESSAGE MODAL & SEARCH LOGIC ---
         const newMessageModal = document.getElementById('new-message-modal');
