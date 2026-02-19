@@ -489,13 +489,7 @@
             const params = new URLSearchParams(window.location.search);
             let username = params.get('username');
 
-            // Check for /u/username pattern
-            const pathParts = window.location.pathname.split('/');
-            // Assuming path is /u/username or /u/username/
-            const uIndex = pathParts.indexOf('u');
-            if (uIndex !== -1 && pathParts[uIndex + 1]) {
-                username = pathParts[uIndex + 1];
-            }
+            // Removed /u/ path parsing logic as it requires server rewrites
 
             onAuthStateChanged(auth, async (user) => {
                 currentUser = user;
@@ -552,20 +546,11 @@
                         }
                     }
 
-                    // --- REDIRECT LOGIC ---
+                    // --- REDIRECT LOGIC REMOVED ---
+                    // Reverted to simple query params for reliability
                     if (userProfile && userProfile.username) {
                         // Update Nav Link
-                        navProfileImg.parentElement.href = `../u/${userProfile.username}`;
-
-                        // Redirect if on generic profile.html without parameters
-                        const currentPath = window.location.pathname;
-                        const hasUsernameParam = new URLSearchParams(window.location.search).has('username');
-
-                        if (!currentPath.includes('/u/') && !hasUsernameParam) {
-                            // Redirect to u/username
-                            window.location.replace(`u/${userProfile.username}`);
-                            return;
-                        }
+                        navProfileImg.parentElement.href = `profile.html?username=${userProfile.username}`;
                     } else {
                         navProfileImg.parentElement.href = 'profile.html';
                     }
