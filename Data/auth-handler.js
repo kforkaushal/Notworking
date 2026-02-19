@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-client.js';
-import supabase from './supabase-client.js';
+import supabase, { setSupabaseToken } from './supabase-client.js';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -21,14 +21,9 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
 export async function setSupabaseSession(user) {
     try {
         const token = await user.getIdToken();
-        // Supabase requires a refresh_token to be present, even if we are using external auth.
-        // We reuse the access_token as the refresh_token to satisfy the client-side check.
-        const { error } = await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: token
-        });
-        if (error) throw error;
-        console.log('Supabase session set successfully.');
+        // Manually set the token to bypass Supabase Auth (GoTrue) validation of RS256 signatures
+        setSupabaseToken(token);
+        console.log('Supabase token set successfully (manual override).');
     } catch (error) {
         console.error('Error setting Supabase session:', error);
         throw error; // Re-throw to be caught by the caller

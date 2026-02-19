@@ -69,7 +69,7 @@
 
     <script type="module">
         import { auth } from './Data/firebase-client.js';
-        import supabase from './Data/supabase-client.js';
+        import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onIdTokenChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         let currentUser = null;
@@ -192,10 +192,8 @@
         onIdTokenChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await supabase.auth.setSession({
-                    access_token: await user.getIdToken(),
-                    refresh_token: await user.getIdToken()
-                });
+                // FIX: Use manual token setter to bypass Supabase Auth RS256 validation error
+                await setSupabaseToken(await user.getIdToken());
 
                 // Update nav bar avatar
                 const navImg = document.getElementById('nav-profile-img');
