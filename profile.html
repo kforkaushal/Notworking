@@ -79,6 +79,9 @@
                 <button id="edit-profile-btn"
                     class="hidden px-6 py-2 bg-slate-900 text-white rounded-full font-bold hover:bg-black transition">Edit
                     Profile</button>
+                <a id="settings-btn" href="settings.html"
+                    class="hidden items-center px-4 py-2 border border-slate-300 text-slate-600 rounded-full font-bold hover:bg-slate-50 transition"
+                    title="Settings"><i data-lucide="settings" class="w-4 h-4"></i></a>
                 <a id="message-btn" href="#"
                     class="hidden items-center px-6 py-2 bg-slate-700 text-white rounded-full font-bold hover:bg-slate-800 transition">Message</a>
                 <button id="follow-btn"
@@ -162,6 +165,22 @@
         let currentUser = null;
         let viewedProfileId = null;
         let isOwner = false;
+
+        // --- NOTIFICATION HELPER ---
+        async function createNotification(type, entityId, recipientId) {
+            if (!currentUser || currentUser.uid === recipientId) return;
+
+            try {
+                await supabase.from('notifications').insert({
+                    type,
+                    entity_id: entityId, // can be null for follows
+                    user_id: recipientId,
+                    actor_id: currentUser.uid
+                });
+            } catch (error) {
+                console.error("Notification failed:", error);
+            }
+        }
 
         // --- FETCH & DISPLAY USER POSTS ---
         async function fetchUserPosts(userId) {
@@ -279,6 +298,8 @@
             // Toggle Buttons
             if (isOwner) {
                 document.getElementById('edit-profile-btn').classList.remove('hidden');
+                document.getElementById('settings-btn').classList.remove('hidden'); // Show Settings
+                document.getElementById('settings-btn').classList.add('flex');
                 document.getElementById('follow-btn').classList.add('hidden');
                 document.getElementById('message-btn').classList.add('hidden');
             } else {
@@ -313,6 +334,7 @@
             btn.onclick = async () => {
                 if (btn.textContent === "Follow") {
                     await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: viewedProfileId });
+                    createNotification('follow', null, viewedProfileId);
                     btn.textContent = "Unfollow";
                     btn.classList.add('bg-slate-500');
                 } else {

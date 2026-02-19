@@ -82,7 +82,8 @@
                     <i data-lucide="bookmark" class="w-6 h-6"></i>
                     <span class="text-xs font-bold hidden sm:block">Saved</span>
                 </a>
-                <a href="#" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-blue-600" title="Groups">
+                <a href="groups.html" class="nav-link flex flex-col items-center gap-0.5 px-2 hover:text-blue-600"
+                    title="Groups">
                     <i data-lucide="users-2" class="w-6 h-6"></i>
                     <span class="text-xs font-bold hidden sm:block">Groups</span>
                 </a>
@@ -96,7 +97,8 @@
                     </div>
                     <span class="text-xs font-bold hidden sm:block">Messaging</span>
                 </a>
-                <a href="#" class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative">
+                <a href="notifications.html"
+                    class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative">
                     <i data-lucide="bell" class="w-6 h-6"></i>
                     <span class="text-xs font-bold hidden sm:block">Notifications</span>
                 </a>
@@ -362,6 +364,33 @@
         let hasMore = true;
         let currentUser = null;
 
+        // Group Logic
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentGroupId = urlParams.get('group_id');
+
+        // Fetch Group Details if in group mode
+        if (currentGroupId) {
+            document.title = "Group Feed - NotWorking";
+            supabase.from('groups').select('*').eq('id', currentGroupId).single()
+                .then(({ data: group }) => {
+                    if (group) {
+                        const createPostInput = document.getElementById("post-input");
+                        createPostInput.placeholder = `Post to ${group.name}...`;
+
+                        // Update UI to show we are in a group
+                        const feedTitle = document.createElement('div');
+                        feedTitle.className = "bg-white p-6 rounded-2xl shadow border border-slate-200 mb-6 text-center";
+                        feedTitle.innerHTML = `
+                            <h2 class="text-2xl font-bold text-slate-900">${group.name}</h2>
+                            <p class="text-slate-500">${group.description}</p>
+                            <a href="feed.html" class="inline-block mt-2 text-sm text-brand-blue hover:underline">← Back to Global Feed</a>
+                        `;
+                        const postContent = document.getElementById("post-content");
+                        postContent.parentNode.insertBefore(feedTitle, postContent);
+                    }
+                });
+        }
+
         let searchTimeout;
         // --- HELPER: UPLOAD FILE ---
         async function uploadFile(file, userId) {
@@ -395,7 +424,11 @@
                 }
 
                 const { data, error } = await supabase.from("posts").insert([{
-                    user_id: currentUser.uid, content, media_url: mediaUrl, media_type: mediaType
+                    user_id: currentUser.uid,
+                    content,
+                    media_url: mediaUrl,
+                    media_type: mediaType,
+                    group_id: currentGroupId || null // Add group ID if present
                 }]).select();
 
                 if (error) throw error;
@@ -445,6 +478,22 @@
             }
         }
 
+        // --- NOTIFICATION HELPER ---
+        async function createNotification(type, entityId, recipientId) {
+            if (!currentUser || currentUser.uid === recipientId) return; // Don't notify self
+
+            try {
+                await supabase.from('notifications').insert({
+                    type,
+                    entity_id: entityId,
+                    user_id: recipientId, // The receiver
+                    actor_id: currentUser.uid // The trigger
+                });
+            } catch (error) {
+                console.error("Notification failed:", error);
+            }
+        }
+
         // --- POST ACTIONS ---
         async function handlePostAction(e) {
             const btn = e.target.closest('button');
@@ -469,6 +518,12 @@
                     icon.classList.add('fill-current');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
                     await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
+
+                    // Notify
+                    const postCard = btn.closest('.post-card');
+                    if (postCard && postCard.dataset.authorId) {
+                        createNotification('like', postId, postCard.dataset.authorId);
+                    }
                 }
             }
 
@@ -584,6 +639,12 @@
                 loadComments(postId, form.previousElementSibling);
                 const btnSpan = form.closest('.post-card').querySelector('.comment-btn span');
                 if (btnSpan) btnSpan.textContent = parseInt(btnSpan.textContent) + 1;
+
+                // Notify
+                const postCard = form.closest('.post-card');
+                if (postCard && postCard.dataset.authorId) {
+                    createNotification('comment', postId, postCard.dataset.authorId);
+                }
             }
         }
 
@@ -621,6 +682,7 @@
 
             const div = document.createElement('div');
             div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group";
+            div.dataset.authorId = post.user_id;
 
             let mediaHTML = '';
             if (post.media_url) {
@@ -701,12 +763,20 @@
                 const from = currentPage * POSTS_PER_PAGE;
                 const to = from + POSTS_PER_PAGE - 1;
 
-                // Updated Query: Removed ":user_id" alias to avoid potential relationship bugs
-                let { data: posts, error } = await supabase.from("posts")
+                let query = supabase.from("posts")
                     .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                     .ilike('content', `%${searchTerm}%`) // Filter posts by content
                     .order("created_at", { ascending: false })
                     .range(from, to);
+
+                if (currentGroupId) {
+                    query = query.eq('group_id', currentGroupId);
+                } else {
+                    // updated: show all public posts (null group_id) on main feed
+                    query = query.is('group_id', null);
+                }
+
+                let { data: posts, error } = await query;
 
                 if (posts && posts.length > 0) {
                     const postIds = posts.map(p => p.id);

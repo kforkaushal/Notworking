@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - NotWorking</title>
+    <meta name="description" content="See who is ignoring your work.">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="language" content="English">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://notworking-in.vercel.app/notifications.html">
+    <meta property="og:title" content="Notifications - NotWorking">
+    <meta property="og:description" content="See who is ignoring your work.">
+    <meta property="og:image" content="https://notworking-in.vercel.app/src/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://notworking-in.vercel.app/notifications.html">
+    <meta property="twitter:title" content="Notifications - NotWorking">
+    <meta property="twitter:description" content="See who is ignoring your work.">
+    <meta property="twitter:image" content="https://notworking-in.vercel.app/src/assets/og-image.png">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://notworking-in.vercel.app/notifications.html" />
+
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
+            <div class="flex items-center gap-4">
+                <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
+                <a href="profile.html">
+                    <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
+                        class="w-8 h-8 rounded-full border border-slate-200" />
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <div class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Notifications</h1>
+                <p class="text-slate-500 mt-1">Updates on your inactivity.</p>
+            </div>
+            <button id="mark-all-read-btn" class="text-sm font-bold text-brand-blue hover:underline">Mark all as
+                read</button>
+        </div>
+
+        <div id="notifications-container" class="space-y-4">
+            <div class="text-center py-10">
+                <i data-lucide="loader-2" class="w-8 h-8 text-slate-400 animate-spin mx-auto"></i>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth } from './Data/firebase-client.js';
+        import supabase, { setSupabaseToken } from './Data/supabase-client.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        let currentUser = null;
+
+        // --- INIT ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await setSupabaseToken(await user.getIdToken());
+                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                fetchNotifications();
+            } else {
+                window.location.href = 'Auth/login.html';
+            }
+        });
+
+        async function fetchNotifications() {
+            const container = document.getElementById('notifications-container');
+
+            // Fetch notifications (assuming table 'notifications' exists)
+            // Fields: id, actor_id, type (like, comment, follow), entity_id (post_id), is_read, created_at, profiles:actor_id(username, avatar_url)
+            const { data: notifications, error } = await supabase
+                .from('notifications')
+                .select(`
+                    id, type, created_at, is_read,
+                    actor:profiles!actor_id (username, full_name, avatar_url),
+                    post:posts!entity_id (content)
+                `)
+                .eq('user_id', currentUser.uid)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                console.error('Error fetching notifications:', error);
+
+                // Fallback if table doesn't exist yet (for demo/dev)
+                if (error.code === '42P01') { // Undefined table
+                    container.innerHTML = `
+                    <div class="text-center py-10 text-slate-500 bg-white rounded-xl border border-slate-200">
+                        <i data-lucide="bell-off" class="w-10 h-10 mx-auto mb-2 text-slate-400"></i>
+                        <p>Notification system is initializing...</p>
+                        <p class="text-xs mt-2 text-slate-400">(Table 'notifications' not found)</p>
+                    </div>`;
+                    lucide.createIcons();
+                    return;
+                }
+
+                container.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg">Error loading notifications.</div>`;
+                return;
+            }
+
+            if (!notifications || notifications.length === 0) {
+                container.innerHTML = `
+                <div class="text-center py-10 text-slate-500 bg-white rounded-xl border border-slate-200">
+                    <i data-lucide="bell" class="w-10 h-10 mx-auto mb-2 text-slate-400"></i>
+                    No new notifications. Go take a nap.
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = '';
+
+            notifications.forEach(n => {
+                const isReadClass = n.is_read ? 'opacity-60' : 'bg-blue-50/50';
+                const avatar = n.actor?.avatar_url || 'src/assets/avatar-placeholder.png';
+                const name = n.actor?.full_name || 'Someone';
+                const username = n.actor?.username || 'user';
+
+                let contentText = '';
+                let icon = '';
+
+                if (n.type === 'like') {
+                    contentText = `liked your post: "${n.post?.content?.substring(0, 30)}..."`;
+                    icon = '<div class="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-1 border-2 border-white"><i data-lucide="heart" class="w-3 h-3 text-white"></i></div>';
+                } else if (n.type === 'comment') {
+                    contentText = `commented on your post: "${n.post?.content?.substring(0, 30)}..."`;
+                    icon = '<div class="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-white"><i data-lucide="message-circle" class="w-3 h-3 text-white"></i></div>';
+                } else if (n.type === 'follow') {
+                    contentText = `started following you.`;
+                    icon = '<div class="absolute -bottom-1 -right-1 bg-slate-900 rounded-full p-1 border-2 border-white"><i data-lucide="user-plus" class="w-3 h-3 text-white"></i></div>';
+                }
+
+                const div = document.createElement('a');
+                div.href = n.type === 'follow' ? `profile.html?username=${username}` : `feed.html`; // Should deep link to post ideally
+                div.className = `block p-4 bg-white rounded-xl border border-slate-200 flex gap-4 items-center hover:bg-slate-50 transition ${isReadClass}`;
+                div.innerHTML = `
+                    <div class="relative">
+                        <img src="${avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-200">
+                        ${icon}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm text-slate-900"><span class="font-bold">${name}</span> ${contentText}</p>
+                        <p class="text-xs text-slate-500 mt-1">${new Date(n.created_at).toLocaleString()}</p>
+                    </div>
+                    ${!n.is_read ? '<span class="w-3 h-3 bg-blue-500 rounded-full"></span>' : ''}
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        document.getElementById('mark-all-read-btn').addEventListener('click', async () => {
+            const { error } = await supabase.from('notifications')
+                .update({ is_read: true })
+                .eq('user_id', currentUser.uid);
+
+            if (!error) {
+                fetchNotifications();
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

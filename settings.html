@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - NotWorking</title>
+    <meta name="description" content="Manage your NotWorking account settings.">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="language" content="English">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://notworking-in.vercel.app/settings.html">
+    <meta property="og:title" content="Settings - NotWorking">
+    <meta property="og:description" content="Manage your NotWorking account settings.">
+    <meta property="og:image" content="https://notworking-in.vercel.app/src/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://notworking-in.vercel.app/settings.html">
+    <meta property="twitter:title" content="Settings - NotWorking">
+    <meta property="twitter:description" content="Manage your NotWorking account settings.">
+    <meta property="twitter:image" content="https://notworking-in.vercel.app/src/assets/og-image.png">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://notworking-in.vercel.app/settings.html" />
+
+    <link rel="icon" type="image/png" href="src/assets/logo-white-circle.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+
+    <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
+            <div class="flex items-center gap-4">
+                <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
+                <a href="profile.html">
+                    <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
+                        class="w-8 h-8 rounded-full border border-slate-200" />
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Account Settings</h1>
+            <p class="text-slate-500 mt-1">Manage your security and privacy.</p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+
+            <!-- CHANGE EMAIL -->
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-slate-900 mb-4">Change Email</h2>
+                <form id="email-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">New Email Address</label>
+                        <input type="email" id="new-email" required
+                            class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Current Password (Required)</label>
+                        <input type="password" id="email-confirm-password" required
+                            class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="email-msg" class="hidden text-sm p-2 rounded"></div>
+                    <button type="submit"
+                        class="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-black transition">Update
+                        Email</button>
+                </form>
+            </div>
+
+            <!-- CHANGE PASSWORD -->
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-slate-900 mb-4">Change Password</h2>
+                <form id="password-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Current Password</label>
+                        <input type="password" id="current-password" required
+                            class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">New Password</label>
+                        <input type="password" id="new-password" required minlength="6"
+                            class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" required minlength="6"
+                            class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="password-msg" class="hidden text-sm p-2 rounded"></div>
+                    <button type="submit"
+                        class="px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-black transition">Update
+                        Password</button>
+                </form>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="p-6 bg-red-50 rounded-b-xl">
+                <h2 class="text-xl font-bold text-red-600 mb-4">Danger Zone</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900">Delete Account</h3>
+                        <p class="text-sm text-slate-500">Permanently delete your account and all data.</p>
+                    </div>
+                    <button id="delete-account-btn"
+                        class="px-4 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-600 hover:text-white transition">Delete
+                        Account</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth } from './Data/firebase-client.js';
+        import supabase, { setSupabaseToken } from './Data/supabase-client.js';
+        import { onAuthStateChanged, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        let currentUser = null;
+
+        // --- INIT ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await setSupabaseToken(await user.getIdToken());
+                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+            } else {
+                window.location.href = 'Auth/login.html';
+            }
+        });
+
+        // --- RE-AUTH HELPER ---
+        async function reauthenticate(password) {
+            const credential = EmailAuthProvider.credential(currentUser.email, password);
+            try {
+                await reauthenticateWithCredential(currentUser, credential);
+                return true;
+            } catch (error) {
+                console.error("Reauth Error:", error);
+                throw new Error("Incorrect password. Please try again.");
+            }
+        }
+
+        // --- CHANGE PASSWORD ---
+        document.getElementById('password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('password-msg');
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirmPass = document.getElementById('confirm-new-password').value;
+
+            msg.className = "text-sm p-2 rounded hidden";
+
+            if (newPass !== confirmPass) {
+                msg.textContent = "New passwords do not match.";
+                msg.classList.add('bg-red-100', 'text-red-600');
+                msg.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                await reauthenticate(currentPass);
+                await updatePassword(currentUser, newPass);
+                msg.textContent = "Password updated successfully.";
+                msg.className = "text-sm p-2 rounded bg-green-100 text-green-700 block";
+                document.getElementById('password-form').reset();
+            } catch (error) {
+                msg.textContent = error.message;
+                msg.className = "text-sm p-2 rounded bg-red-100 text-red-600 block";
+            }
+        });
+
+        // --- CHANGE EMAIL ---
+        document.getElementById('email-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('email-msg');
+            const newEmail = document.getElementById('new-email').value;
+            const password = document.getElementById('email-confirm-password').value;
+
+            msg.className = "text-sm p-2 rounded hidden";
+
+            try {
+                await reauthenticate(password);
+                await updateEmail(currentUser, newEmail);
+                // Also update Supabase profiles table if email is stored there
+                await supabase.from('profiles').update({ email: newEmail }).eq('id', currentUser.uid);
+
+                msg.textContent = "Email updated successfully.";
+                msg.className = "text-sm p-2 rounded bg-green-100 text-green-700 block";
+                document.getElementById('email-form').reset();
+            } catch (error) {
+                msg.textContent = error.message;
+                msg.className = "text-sm p-2 rounded bg-red-100 text-red-600 block";
+            }
+        });
+
+        // --- DELETE ACCOUNT ---
+        document.getElementById('delete-account-btn').addEventListener('click', async () => {
+            if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                const password = prompt("Please enter your password to confirm deletion:");
+                if (password) {
+                    try {
+                        await reauthenticate(password);
+
+                        // 1. Delete from Supabase (Trigger should handle cascading, but let's be safe)
+                        await supabase.from('profiles').delete().eq('id', currentUser.uid);
+
+                        // 2. Delete from Firebase
+                        await deleteUser(currentUser);
+
+                        alert("Account deleted.");
+                        window.location.href = 'index.html';
+                    } catch (error) {
+                        alert("Error deleting account: " + error.message);
+                    }
+                }
+            }
+        });
+
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
