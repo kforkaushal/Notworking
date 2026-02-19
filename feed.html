@@ -394,19 +394,47 @@
                     mediaType = file.type.startsWith('image') ? 'image' : 'video';
                 }
 
-                const { error } = await supabase.from("posts").insert([{
+                const { data, error } = await supabase.from("posts").insert([{
                     user_id: currentUser.uid, content, media_url: mediaUrl, media_type: mediaType
-                }]);
+                }]).select();
 
                 if (error) throw error;
                 document.getElementById("post-input").value = "";
                 document.getElementById("file-input").value = "";
 
-                // Reload feed to show new post
-                currentPage = 0;
-                hasMore = true;
-                document.getElementById("feed-posts-container").innerHTML = '';
-                fetchPosts();
+                if (error) throw error;
+                document.getElementById("post-input").value = "";
+                document.getElementById("file-input").value = "";
+
+                // --- OPTIMIZATION: Optimistic UI Update ---
+                const newPost = {
+                    id: data?.[0]?.id || Date.now(), // Fallback ID if not returned immediately
+                    user_id: currentUser.uid,
+                    content: content,
+                    media_url: mediaUrl,
+                    media_type: mediaType,
+                    created_at: new Date().toISOString(),
+                    likes: [{ count: 0 }],
+                    comments: [{ count: 0 }],
+                    profiles: {
+                        username: document.getElementById('nav-profile-name').textContent || 'Me', // Fallback
+                        full_name: currentUser.displayName || 'Me',
+                        avatar_url: currentUser.photoURL || 'src/assets/avatar-placeholder.png'
+                    },
+                    is_liked_by_user: false,
+                    is_saved_by_user: false
+                };
+
+                const container = document.getElementById("feed-posts-container");
+                const newPostEl = createPostElement(newPost);
+
+                // Remove "No posts yet" message if present
+                if (container.children.length === 1 && container.firstElementChild.innerText.includes("No posts")) {
+                    container.innerHTML = '';
+                }
+
+                container.prepend(newPostEl);
+                lucide.createIcons({ nodes: [newPostEl] });
 
             } catch (err) {
                 console.error(err);
@@ -714,21 +742,27 @@
             return data.reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
         }
 
-        // --- SCROLL LISTENER (Simple Infinite Scroll) ---
-        window.addEventListener('scroll', () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
-                // Only fetch more if not in a search context for simplicity
+        // --- OPTIMIZATION: INTERSECTION OBSERVER FOR INFINITE SCROLL ---
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoading && hasMore) {
+                // Only fetch if not searching
                 const currentSearch = document.querySelector('.search-bar').value;
                 if (!currentSearch) fetchPosts();
             }
-        });
+        }, { rootMargin: '200px' });
+
+        const sentinel = document.getElementById('scroll-sentinel');
+        if (sentinel) observer.observe(sentinel);
 
         // --- INIT ---
         onIdTokenChanged(auth, async (user) => {
             if (user) {
                 const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
                 currentUser = user;
-                await supabase.auth.setSession({ access_token: await user.getIdToken() });
+                await supabase.auth.setSession({
+                    access_token: await user.getIdToken(),
+                    refresh_token: await user.getIdToken()
+                });
 
                 const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
                 const name = user.displayName || 'User';

@@ -192,7 +192,10 @@
         onIdTokenChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await supabase.auth.setSession({ access_token: await user.getIdToken() });
+                await supabase.auth.setSession({
+                    access_token: await user.getIdToken(),
+                    refresh_token: await user.getIdToken()
+                });
 
                 // Update nav bar avatar
                 const navImg = document.getElementById('nav-profile-img');

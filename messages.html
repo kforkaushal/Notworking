@@ -427,7 +427,10 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await supabase.auth.setSession({ access_token: await user.getIdToken() });
+                await supabase.auth.setSession({
+                    access_token: await user.getIdToken(),
+                    refresh_token: await user.getIdToken()
+                });
 
                 // Update nav bar
                 const { data: userProfile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();

@@ -21,7 +21,12 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
 export async function setSupabaseSession(user) {
     try {
         const token = await user.getIdToken();
-        const { error } = await supabase.auth.setSession({ access_token: token });
+        // Supabase requires a refresh_token to be present, even if we are using external auth.
+        // We reuse the access_token as the refresh_token to satisfy the client-side check.
+        const { error } = await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: token
+        });
         if (error) throw error;
         console.log('Supabase session set successfully.');
     } catch (error) {
