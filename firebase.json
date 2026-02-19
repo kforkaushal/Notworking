@@ -11,6 +11,10 @@
             {
                 "source": "/profile/**",
                 "destination": "/profile.html"
+            },
+            {
+                "source": "/u/**",
+                "destination": "/profile.html"
             }
         ],
         "headers": [

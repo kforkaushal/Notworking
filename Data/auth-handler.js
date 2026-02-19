@@ -18,7 +18,7 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
  * Sets the Supabase session using the Firebase JWT.
  * @param {import("firebase/auth").User} user - The Firebase user object.
  */
-async function setSupabaseSession(user) {
+export async function setSupabaseSession(user) {
     try {
         const token = await user.getIdToken();
         const { error } = await supabase.auth.setSession({ access_token: token });
@@ -35,8 +35,9 @@ async function setSupabaseSession(user) {
  * @param {string} fullname
  * @param {string} email
  * @param {string} password
+ * @param {string} username
  */
-export async function handleEmailPasswordSignUp(fullname, email, password) {
+export async function handleEmailPasswordSignUp(fullname, email, password, username) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
@@ -50,6 +51,7 @@ export async function handleEmailPasswordSignUp(fullname, email, password) {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     await setDoc(userDocRef, {
         displayName: fullname,
+        username: username,
         email: firebaseUser.email,
         bio: "Thrilled to announce... nothing. Absolutely nothing. 🤡",
         skills: ["Sleeping all day", "Applying at 3AM", "Ghosted by HR"],
@@ -62,11 +64,12 @@ export async function handleEmailPasswordSignUp(fullname, email, password) {
     const { error: supabaseError } = await supabase.from('profiles').insert({
         id: firebaseUser.uid,
         full_name: fullname,
+        username: username,
         email: firebaseUser.email
     });
     if (supabaseError) throw supabaseError;
 
-    window.location.href = '../feed.html';
+    return firebaseUser;
 }
 
 /**
@@ -84,7 +87,7 @@ export async function handleEmailPasswordLogin(email, password, rememberMe) {
     // Set the Supabase session immediately after login to prevent race conditions on the feed page.
     await setSupabaseSession(userCredential.user);
 
-    window.location.href = '../feed.html';
+    return userCredential.user;
 }
 
 /**
@@ -96,7 +99,7 @@ export async function handleGoogleAuth() {
 
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    
+
     const additionalInfo = getAdditionalUserInfo(result);
     const user = result.user;
 
@@ -106,11 +109,16 @@ export async function handleGoogleAuth() {
     // If it's a new user, create their profiles
     if (additionalInfo.isNewUser) {
         console.log("New Google user, creating profiles in Firestore and Supabase...");
-        
+
+        // Generate a random username for Google users
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const username = `user_${randomSuffix}`;
+
         // Create in Firestore
         const userDocRef = doc(db, "users", user.uid);
         await setDoc(userDocRef, {
             displayName: user.displayName,
+            username: username,
             email: user.email,
             photoURL: user.photoURL,
             bio: "Just landed on NotWorking, ready to do nothing!",
@@ -124,13 +132,14 @@ export async function handleGoogleAuth() {
         const { error: supabaseError } = await supabase.from('profiles').insert({
             id: user.uid,
             full_name: user.displayName,
+            username: username,
             avatar_url: user.photoURL,
             email: user.email
         });
         if (supabaseError) throw supabaseError;
     }
 
-    window.location.href = '../feed.html';
+    return user;
 }
 
 /**
