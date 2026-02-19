@@ -121,7 +121,11 @@
                     return;
                 }
 
-                container.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg">Error loading notifications.</div>`;
+                container.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg text-sm">
+                    <strong>Error loading notifications:</strong><br>
+                    ${error.message} <br>
+                    <span class="text-xs text-red-400">Code: ${error.code} | Hint: ${error.hint || 'No hint'}</span>
+                </div>`;
                 return;
             }
 
