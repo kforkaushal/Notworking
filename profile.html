@@ -154,9 +154,10 @@
     </div>
 
     <script type="module">
-        import { auth } from '../Data/firebase-client.js';
+        import { auth, db } from '../Data/firebase-client.js';
         import supabase from '../Data/supabase-client.js';
         import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         let currentUser = null;
         let viewedProfileId = null;
@@ -447,14 +448,59 @@
                 currentUser = user;
                 if (user) {
                     // Fetch the current user's profile to get their Supabase username
-                    const { data: userProfile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
+                    let { data: userProfile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
+
+                    // --- BACKFILL USERNAME FOR OLD USERS ---
+                    if (!userProfile || !userProfile.username) {
+                        console.log("Backfilling missing username...");
+                        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                        const newUsername = `user_${randomSuffix}`;
+
+                        // Update Supabase
+                        const { error: sbError } = await supabase.from('profiles').upsert({
+                            id: user.uid,
+                            username: newUsername,
+                            full_name: user.displayName || 'Anonymous',
+                            email: user.email,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'id' }); // Upsert by ID
+
+                        if (!sbError) {
+                            // Update Firestore
+                            const userRef = doc(db, "users", user.uid);
+                            try {
+                                await updateDoc(userRef, { username: newUsername });
+                            } catch (e) {
+                                // Doc might not exist, set it
+                                await setDoc(userRef, {
+                                    username: newUsername,
+                                    email: user.email,
+                                    displayName: user.displayName,
+                                    createdAt: new Date()
+                                }, { merge: true });
+                            }
+                            userProfile = { username: newUsername };
+                        }
+                    }
 
                     await supabase.auth.setSession({ access_token: await user.getIdToken() });
                     const navProfileImg = document.getElementById('nav-profile-img');
                     navProfileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
-                    // Update nav profile link to use /u/username if available
+
+                    // --- REDIRECT LOGIC ---
                     if (userProfile && userProfile.username) {
+                        // Update Nav Link
                         navProfileImg.parentElement.href = `../u/${userProfile.username}`;
+
+                        // Redirect if on generic profile.html without parameters
+                        const currentPath = window.location.pathname;
+                        const hasUsernameParam = new URLSearchParams(window.location.search).has('username');
+
+                        if (!currentPath.includes('/u/') && !hasUsernameParam) {
+                            // Redirect to u/username
+                            window.location.replace(`u/${userProfile.username}`);
+                            return;
+                        }
                     } else {
                         navProfileImg.parentElement.href = 'profile.html';
                     }
