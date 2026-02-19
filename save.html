@@ -237,8 +237,12 @@
                 await setSupabaseToken(await user.getIdToken());
 
                 // Update nav bar avatar
+                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
                 const navImg = document.getElementById('nav-profile-img');
-                if (navImg) navImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                if (navImg) navImg.src = photo;
+                // Also update the bottom nav profile image
+                const mobileNavImg = document.getElementById('mobile-nav-profile-img');
+                if (mobileNavImg) mobileNavImg.src = photo;
 
                 // Fetch the saved posts for this user
                 fetchSavedPosts();

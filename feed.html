@@ -916,7 +916,10 @@
                 updateEl('sidebar-profile-name', 'textContent', name);
                 updateEl('sidebar-profile-email', 'textContent', email);
 
-                // Mobile Nav Profile
+                // Mobile Nav Profile (Bottom Nav)
+                updateEl('mobile-nav-profile-img', 'src', photo);
+
+                // Legacy Mobile Header (Hidden)
                 updateEl('nav-profile-img-mobile', 'src', photo);
                 if (profile) document.getElementById('nav-profile-link').href = `profile.html?username=${profile.username}`;
 

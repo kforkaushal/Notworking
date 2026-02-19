@@ -461,7 +461,10 @@
                 // Update nav bar
                 const { data: userProfile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
                 const navProfileImg = document.getElementById('nav-profile-img');
-                navProfileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
+                navProfileImg.src = photo;
+                const mobileNavImg = document.getElementById('mobile-nav-profile-img');
+                if (mobileNavImg) mobileNavImg.src = photo;
                 if (userProfile) document.getElementById('nav-profile-link').href = `profile.html?username=${userProfile.username}`;
 
                 // Load user's conversations

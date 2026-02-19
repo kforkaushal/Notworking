@@ -495,8 +495,12 @@
                 currentUser = user;
                 if (user) {
                     await setSupabaseToken(await user.getIdToken());
+                    const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
                     const navProfileImg = document.getElementById('nav-profile-img');
-                    navProfileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                    navProfileImg.src = photo;
+                    // Update bottom nav profile image
+                    const mobileNavImg = document.getElementById('mobile-nav-profile-img');
+                    if (mobileNavImg) mobileNavImg.src = photo;
 
                     // --- OPTIMIZATION: Check LocalStorage First ---
                     let cachedUsername = localStorage.getItem('nw_username');

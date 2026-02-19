@@ -140,7 +140,10 @@
             if (user) {
                 currentUser = user;
                 await setSupabaseToken(await user.getIdToken());
-                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
+                document.getElementById('nav-profile-img').src = photo;
+                const mobileNavImg = document.getElementById('mobile-nav-profile-img');
+                if (mobileNavImg) mobileNavImg.src = photo;
                 fetchGroups();
             } else {
                 window.location.href = 'Auth/login.html';
