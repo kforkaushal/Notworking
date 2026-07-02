@@ -145,13 +145,17 @@
                 // 3. Fetch the current user's like states for these posts
                 let likeStates = {};
                 if (posts && posts.length > 0) {
-                    const { data: likedData } = await supabase
+                    const { data: likedData, error: likesError } = await supabase
                         .from('likes')
                         .select('post_id')
                         .eq('user_id', currentUser.uid)
                         .in('post_id', postIds);
+                    
+                    if (likesError) {
+                        console.warn('save page likes query failed:', likesError.message);
+                    }
                     if (likedData) {
-                        likeStates = likedData.reduce((acc, l) => ({ ...acc, [l.post_id]: true }), {});
+                        likeStates = likedData.reduce((acc, l) => ({ ...acc, [String(l.post_id)]: true }), {});
                     }
                 }
 
@@ -162,7 +166,7 @@
                         // Enrich post with like/save state so icons render correctly
                         const enriched = {
                             ...post,
-                            is_liked_by_user: !!likeStates[post.id],
+                            is_liked_by_user: !!likeStates[String(post.id)],
                             is_saved_by_user: true // All posts here are saved by definition
                         };
                         const el = createPostElement(enriched, currentUser);

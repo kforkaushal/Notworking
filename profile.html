@@ -257,6 +257,9 @@
                         supabase.from('saved_posts').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds)
                     ]);
                     
+                    if (likesRes.error) console.warn('profile likes query failed:', likesRes.error.message);
+                    if (savesRes.error) console.warn('profile saves query failed:', savesRes.error.message);
+
                     const likeStates = (likesRes.data || []).reduce((acc, like) => ({ ...acc, [String(like.post_id)]: true }), {});
                     const saveStates = (savesRes.data || []).reduce((acc, save) => ({ ...acc, [String(save.post_id)]: true }), {});
 
