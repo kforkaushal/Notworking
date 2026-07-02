@@ -102,8 +102,13 @@
                     <span class="text-xs font-bold hidden sm:block">Messaging</span>
                 </a>
                 <a href="notifications.html"
-                    class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative">
-                    <i data-lucide="bell" class="w-6 h-6"></i>
+                    class="flex flex-col items-center gap-0.5 px-2 hover:text-blue-600 relative"
+                    title="Notifications">
+                    <div class="relative">
+                        <i data-lucide="bell" class="w-6 h-6"></i>
+                        <span id="notif-unread-badge"
+                            class="hidden absolute -top-2 -right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </div>
                     <span class="text-xs font-bold hidden sm:block">Notifications</span>
                 </a>
                 <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
@@ -900,6 +905,58 @@
                         badge.textContent = parseInt(badge.textContent || "0") + 1;
                     })
                     .subscribe();
+
+                // --- INITIAL UNREAD NOTIFICATION COUNT ---
+                const { count: unreadCount } = await supabase
+                    .from('notifications')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.uid)
+                    .eq('is_read', false);
+
+                if (unreadCount > 0) {
+                    const badge = document.getElementById('notif-unread-badge');
+                    if (badge) {
+                        badge.classList.remove('hidden');
+                        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    }
+                }
+
+                // --- REALTIME NOTIFICATIONS LISTENER ---
+                supabase.channel(`notif:${user.uid}`)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${user.uid}`
+                    }, async (payload) => {
+                        const n = payload.new;
+
+                        // Bump the bell badge
+                        const badge = document.getElementById('notif-unread-badge');
+                        if (badge) {
+                            badge.classList.remove('hidden');
+                            const current = parseInt(badge.textContent) || 0;
+                            badge.textContent = current + 1 > 99 ? '99+' : current + 1;
+                        }
+
+                        // Fetch actor name for toast
+                        const { data: actor } = await supabase
+                            .from('profiles')
+                            .select('full_name')
+                            .eq('id', n.actor_id)
+                            .single();
+                        const actorName = actor?.full_name || 'Someone';
+
+                        if (n.type === 'like') {
+                            showGlobalToast(`❤️ ${actorName} liked your post`, 'info');
+                        } else if (n.type === 'comment') {
+                            showGlobalToast(`💬 ${actorName} commented on your post`, 'info');
+                        } else if (n.type === 'follow') {
+                            showGlobalToast(`👤 ${actorName} started following you`, 'info');
+                        }
+                    })
+                    .subscribe();
+
             } else {
                 window.location.href = 'Auth/login.html';
             }

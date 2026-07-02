@@ -33,8 +33,28 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; }
+
+        @keyframes scale-up {
+            from { transform: scale(0.95); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .animate-scale-up { animation: scale-up 0.18s ease-out; }
+
+        /* Members list scrollable area */
+        .members-scroll { max-height: 380px; overflow-y: auto; }
+        .members-scroll::-webkit-scrollbar { width: 4px; }
+        .members-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+        /* Owner crown badge */
+        .owner-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 1px 6px;
+            border-radius: 99px;
         }
     </style>
 </head>
@@ -45,8 +65,7 @@
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
             <div class="hidden sm:flex items-center gap-4">
-                <a href="notifications.html"
-                    class="text-slate-500 hover:text-brand-blue font-bold text-sm">Notifications</a>
+                <a href="notifications.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Notifications</a>
                 <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
                 <a href="profile.html">
                     <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
@@ -63,8 +82,8 @@
                 <p class="text-slate-500 mt-1">Find people who are equally unproductive.</p>
             </div>
             <button id="create-group-btn"
-                class="px-4 py-2 bg-slate-900 text-white font-bold rounded-full hover:bg-black transition">
-                Create Group
+                class="px-4 py-2 bg-slate-900 text-white font-bold rounded-full hover:bg-black transition flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Create Group
             </button>
         </div>
 
@@ -75,11 +94,18 @@
         </div>
     </main>
 
-    <!-- CREATE GROUP MODAL -->
+    <!-- ==========================================
+         CREATE GROUP MODAL
+    =========================================== -->
     <div id="create-group-modal"
         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-scale-up">
-            <h2 class="text-2xl font-bold mb-4">Create a New Tribe</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold">Create a New Tribe</h2>
+                <button id="cancel-group-btn" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
             <form id="create-group-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Group Name</label>
@@ -91,14 +117,85 @@
                     <textarea id="group-desc" required rows="3" placeholder="What is this group about?"
                         class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
-                <!-- Image Upload can be V2 -->
                 <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" id="cancel-group-btn"
+                    <button type="button" id="cancel-group-btn-2"
                         class="px-4 py-2 text-slate-600 hover:text-slate-900 font-bold">Cancel</button>
-                    <button type="submit"
+                    <button type="submit" id="create-submit-btn"
                         class="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-black transition">Create</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MEMBERS PANEL MODAL (Owner view)
+    =========================================== -->
+    <div id="members-modal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-scale-up flex flex-col max-h-[85vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-100">
+                <div>
+                    <h2 class="text-xl font-bold" id="members-modal-title">Members</h2>
+                    <p class="text-sm text-slate-500 mt-0.5" id="members-modal-count">Loading...</p>
+                </div>
+                <button id="close-members-modal" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Owner-only Danger Zone Banner -->
+            <div id="owner-banner" class="hidden px-6 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+                <i data-lucide="crown" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
+                <span class="text-xs font-semibold text-amber-700">You own this group. Click a member to remove them.</span>
+            </div>
+
+            <!-- Members List -->
+            <div class="members-scroll flex-1 p-4 space-y-2" id="members-list">
+                <div class="flex justify-center py-8">
+                    <i data-lucide="loader-2" class="w-8 h-8 text-slate-400 animate-spin"></i>
+                </div>
+            </div>
+
+            <!-- Owner-only Delete Group Section -->
+            <div id="delete-group-section" class="hidden p-6 border-t border-red-100 bg-red-50/50 rounded-b-2xl">
+                <p class="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2">
+                    <i data-lucide="triangle-alert" class="w-4 h-4"></i>
+                    Danger Zone — Permanently delete this group
+                </p>
+                <p class="text-xs text-red-500 mb-4">This will delete the group and all its posts. Type the group name to confirm.</p>
+                <input type="text" id="delete-confirm-input"
+                    placeholder="Type group name to confirm..."
+                    class="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-3">
+                <button id="confirm-delete-btn"
+                    class="w-full py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled>
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    Delete Group Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         LEAVE GROUP CONFIRM MODAL
+    =========================================== -->
+    <div id="leave-modal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-scale-up">
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="log-out" class="w-7 h-7 text-red-500"></i>
+                </div>
+                <h2 class="text-xl font-bold">Leave Group?</h2>
+                <p class="text-slate-500 text-sm mt-2">You can always rejoin later. Your posts will remain.</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="cancel-leave-btn"
+                    class="flex-1 py-2 border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition">Cancel</button>
+                <button id="confirm-leave-btn"
+                    class="flex-1 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition">Leave</button>
+            </div>
         </div>
     </div>
 
@@ -135,43 +232,59 @@
         import { showToast } from './shared/ui.js';
 
         let currentUser = null;
+        // State for modals
+        let activeGroup = null;    // the group object currently open in members modal
+        let leaveGroupId = null;   // id of group user is about to leave
 
-        // --- INIT ---
+        const GRADIENTS = [
+            'from-blue-400 to-indigo-600',
+            'from-red-400 to-pink-600',
+            'from-green-400 to-teal-600',
+            'from-yellow-400 to-orange-600',
+            'from-purple-400 to-violet-600',
+            'from-cyan-400 to-sky-600',
+        ];
+
+        // ─── AUTH INIT ──────────────────────────────────────────────────────────
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await setSupabaseToken(await user.getIdToken());
-                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
-                document.getElementById('nav-profile-img').src = photo;
-                const mobileNavImg = document.getElementById('mobile-nav-profile-img');
-                if (mobileNavImg) mobileNavImg.src = photo;
+                const token = await user.getIdToken();
+                setSupabaseToken(token);
+                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                const mobileImg = document.getElementById('mobile-nav-profile-img');
+                if (mobileImg) mobileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
                 fetchGroups();
             } else {
                 window.location.href = 'Auth/login.html';
             }
         });
 
+        // ─── FETCH & RENDER GROUPS ───────────────────────────────────────────────
         async function fetchGroups() {
             const container = document.getElementById('groups-container');
+            container.innerHTML = `<div class="col-span-full flex justify-center py-20"><i data-lucide="loader-2" class="w-12 h-12 text-slate-400 animate-spin"></i></div>`;
+            lucide.createIcons();
 
+            // Fetch groups + member count for current user's membership status
             const { data: groups, error } = await supabase
                 .from('groups')
-                .select('*')
+                .select('*, group_members(user_id)')
                 .order('created_at', { ascending: false });
 
             if (error) {
                 console.error('Error fetching groups:', error);
-                if (error.code === '42P01') { // Undefined table
+                if (error.code === '42P01') {
                     container.innerHTML = `
                     <div class="col-span-full text-center py-20 bg-white rounded-xl border border-slate-200">
                         <i data-lucide="file-warning" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
                         <h3 class="text-xl font-bold text-slate-900">System Update Required</h3>
-                        <p class="text-slate-500 mt-2">The 'groups' table hasn't been created yet.</p>
+                        <p class="text-slate-500 mt-2">Run <code class="bg-slate-100 px-1 rounded">group_members_schema.sql</code> in Supabase first.</p>
                     </div>`;
-                    lucide.createIcons();
-                    return;
+                } else {
+                    container.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg col-span-full">Error loading groups: ${error.message}</div>`;
                 }
-                container.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-lg col-span-full">Error loading groups.</div>`;
+                lucide.createIcons();
                 return;
             }
 
@@ -188,67 +301,361 @@
 
             container.innerHTML = '';
             groups.forEach(group => {
-                const div = document.createElement('div');
-                div.className = "bg-white p-6 rounded-xl border border-slate-200 hover:shadow-lg transition flex flex-col items-start";
+                const members = group.group_members || [];
+                const memberCount = members.length;
+                const isMember = members.some(m => m.user_id === currentUser.uid);
+                const isOwner = group.created_by === currentUser.uid;
+                const gradIdx = group.name.charCodeAt(0) % GRADIENTS.length;
+                const gradient = GRADIENTS[gradIdx];
 
-                // Random gradient for group placeholder if no image
-                const gradients = [
-                    'bg-gradient-to-br from-blue-400 to-indigo-600',
-                    'bg-gradient-to-br from-red-400 to-pink-600',
-                    'bg-gradient-to-br from-green-400 to-teal-600',
-                    'bg-gradient-to-br from-yellow-400 to-orange-600'
-                ];
-                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-lg ${randomGradient} mb-4 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                        ${group.name.substring(0, 2).toUpperCase()}
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-xl border border-slate-200 hover:shadow-lg transition flex flex-col";
+                card.innerHTML = `
+                    <!-- Group Header -->
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold text-xl shadow-md">
+                            ${group.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="text-lg font-bold text-slate-900 leading-tight truncate">${group.name}</h3>
+                                ${isOwner ? `<span class="owner-badge flex-shrink-0">👑 Owner</span>` : ''}
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5">${memberCount} member${memberCount !== 1 ? 's' : ''}</p>
+                        </div>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-1 leading-tight">${group.name}</h3>
-                    <p class="text-slate-500 text-sm mb-4 line-clamp-2 min-h-[40px]">${group.description}</p>
-                    
-                    <a href="feed.html?group_id=${group.id}" class="mt-auto w-full py-2 bg-slate-50 text-slate-700 font-bold rounded-lg hover:bg-slate-100 hover:text-brand-blue transition text-center border border-slate-100">
-                        View Group
-                    </a>
+                    <p class="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">${group.description || ''}</p>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 mt-auto pt-2 border-t border-slate-100">
+                        <!-- View Feed -->
+                        <a href="feed.html?group_id=${group.id}"
+                            class="flex-1 py-2 bg-slate-50 text-slate-700 font-bold rounded-lg hover:bg-slate-100 hover:text-brand-blue transition text-center text-sm border border-slate-100 flex items-center justify-center gap-1">
+                            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Feed
+                        </a>
+
+                        <!-- Join / Leave button (non-owners) -->
+                        ${!isOwner ? `
+                        <button class="join-leave-btn flex-1 py-2 font-bold rounded-lg text-sm transition flex items-center justify-center gap-1
+                            ${isMember
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'}"
+                            data-group-id="${group.id}"
+                            data-is-member="${isMember}">
+                            ${isMember
+                                ? `<i data-lucide="log-out" class="w-3.5 h-3.5"></i> Leave`
+                                : `<i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Join`}
+                        </button>` : ''}
+
+                        <!-- Members (owner sees this) -->
+                        ${isOwner ? `
+                        <button class="manage-members-btn flex-1 py-2 bg-amber-50 text-amber-700 font-bold rounded-lg text-sm hover:bg-amber-100 border border-amber-100 transition flex items-center justify-center gap-1"
+                            data-group-id="${group.id}"
+                            data-group-name="${group.name}">
+                            <i data-lucide="users" class="w-3.5 h-3.5"></i> Manage
+                        </button>` : `
+                        <!-- Members count button (for non-owners who are members) -->
+                        ${isMember ? `
+                        <button class="view-members-btn py-2 px-3 bg-slate-50 text-slate-500 rounded-lg text-sm hover:bg-slate-100 transition border border-slate-100 flex items-center gap-1"
+                            data-group-id="${group.id}"
+                            data-group-name="${group.name}">
+                            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                        </button>` : ''}`}
+                    </div>
                 `;
-                container.appendChild(div);
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+
+            // ── Bind Join / Leave ──
+            container.querySelectorAll('.join-leave-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const groupId = btn.dataset.groupId;
+                    const isMember = btn.dataset.isMember === 'true';
+                    if (isMember) {
+                        openLeaveConfirm(groupId);
+                    } else {
+                        joinGroup(groupId);
+                    }
+                });
+            });
+
+            // ── Bind Manage Members (owner) ──
+            container.querySelectorAll('.manage-members-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const group = groups.find(g => g.id === btn.dataset.groupId);
+                    openMembersModal(group, true);
+                });
+            });
+
+            // ── Bind View Members (member, non-owner) ──
+            container.querySelectorAll('.view-members-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const group = groups.find(g => g.id === btn.dataset.groupId);
+                    openMembersModal(group, false);
+                });
             });
         }
 
-        // --- CREATE GROUP ---
-        const modal = document.getElementById('create-group-modal');
-        const btn = document.getElementById('create-group-btn');
-        const cancelBtn = document.getElementById('cancel-group-btn');
+        // ─── JOIN GROUP ──────────────────────────────────────────────────────────
+        async function joinGroup(groupId) {
+            try {
+                const { error } = await supabase.from('group_members').insert({
+                    group_id: groupId,
+                    user_id: currentUser.uid
+                });
+                if (error) throw error;
+                showToast('Joined the group! Welcome to the void. 🎉', 'success');
+                fetchGroups();
+            } catch (err) {
+                showToast('Error joining: ' + err.message, 'error');
+            }
+        }
+
+        // ─── LEAVE GROUP ─────────────────────────────────────────────────────────
+        function openLeaveConfirm(groupId) {
+            leaveGroupId = groupId;
+            document.getElementById('leave-modal').classList.remove('hidden');
+            document.getElementById('leave-modal').classList.add('flex');
+        }
+
+        function closeLeaveModal() {
+            leaveGroupId = null;
+            document.getElementById('leave-modal').classList.add('hidden');
+            document.getElementById('leave-modal').classList.remove('flex');
+        }
+
+        document.getElementById('cancel-leave-btn').addEventListener('click', closeLeaveModal);
+        document.getElementById('confirm-leave-btn').addEventListener('click', async () => {
+            if (!leaveGroupId) return;
+            try {
+                const { error } = await supabase.from('group_members')
+                    .delete()
+                    .eq('group_id', leaveGroupId)
+                    .eq('user_id', currentUser.uid);
+                if (error) throw error;
+                showToast('Left the group. Back to solo unemployment. 👋', 'info');
+                closeLeaveModal();
+                fetchGroups();
+            } catch (err) {
+                showToast('Error leaving: ' + err.message, 'error');
+            }
+        });
+
+        // ─── MEMBERS MODAL ───────────────────────────────────────────────────────
+        async function openMembersModal(group, isOwner) {
+            activeGroup = group;
+            document.getElementById('members-modal-title').textContent = `${group.name} — Members`;
+            document.getElementById('members-modal-count').textContent = 'Loading...';
+            document.getElementById('members-list').innerHTML = `<div class="flex justify-center py-8"><i data-lucide="loader-2" class="w-8 h-8 text-slate-400 animate-spin"></i></div>`;
+
+            // Show/hide owner-only UI
+            document.getElementById('owner-banner').classList.toggle('hidden', !isOwner);
+            document.getElementById('delete-group-section').classList.toggle('hidden', !isOwner);
+
+            // Reset delete input
+            const delInput = document.getElementById('delete-confirm-input');
+            const delBtn = document.getElementById('confirm-delete-btn');
+            delInput.value = '';
+            delBtn.disabled = true;
+
+            // Open modal
+            const modal = document.getElementById('members-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+
+            // Fetch members with their profiles
+            const { data: members, error } = await supabase
+                .from('group_members')
+                .select('user_id, joined_at, profiles(full_name, username, avatar_url)')
+                .eq('group_id', group.id)
+                .order('joined_at', { ascending: true });
+
+            if (error) {
+                document.getElementById('members-list').innerHTML = `<p class="text-red-500 text-sm p-4">Error loading members: ${error.message}</p>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const count = members?.length || 0;
+            document.getElementById('members-modal-count').textContent = `${count} member${count !== 1 ? 's' : ''}`;
+
+            if (!members || count === 0) {
+                document.getElementById('members-list').innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <i data-lucide="user-x" class="w-10 h-10 mx-auto mb-2"></i>
+                        <p class="font-medium">No members yet</p>
+                        <p class="text-sm">Share this group to grow your tribe!</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const list = document.getElementById('members-list');
+            list.innerHTML = '';
+
+            members.forEach(m => {
+                const profile = m.profiles || {};
+                const name = profile.full_name || 'Unknown';
+                const username = profile.username || '';
+                const avatar = profile.avatar_url || 'src/assets/avatar-placeholder.png';
+                const joinedDate = new Date(m.joined_at).toLocaleDateString();
+                const isGroupOwner = m.user_id === group.created_by;
+                const isSelf = m.user_id === currentUser.uid;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition group';
+                row.innerHTML = `
+                    <a href="profile.html?username=${username}" class="flex-shrink-0">
+                        <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-slate-200"
+                             onerror="this.src='src/assets/avatar-placeholder.png'">
+                    </a>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <a href="profile.html?username=${username}" class="font-semibold text-slate-900 text-sm hover:underline truncate">${name}</a>
+                            ${isGroupOwner ? `<span class="owner-badge">👑 Owner</span>` : ''}
+                            ${isSelf && !isGroupOwner ? `<span class="text-xs text-slate-400 font-medium">(You)</span>` : ''}
+                        </div>
+                        <p class="text-xs text-slate-400">@${username} · Joined ${joinedDate}</p>
+                    </div>
+                    ${isOwner && !isGroupOwner ? `
+                    <button class="kick-btn opacity-0 group-hover:opacity-100 transition px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg border border-red-100"
+                        data-user-id="${m.user_id}" data-user-name="${name}" title="Remove from group">
+                        <i data-lucide="user-minus" class="w-3.5 h-3.5 inline -mt-0.5"></i> Remove
+                    </button>` : ''}
+                `;
+                list.appendChild(row);
+            });
+
+            lucide.createIcons();
+
+            // Bind kick buttons
+            if (isOwner) {
+                list.querySelectorAll('.kick-btn').forEach(btn => {
+                    btn.addEventListener('click', () => kickMember(btn.dataset.userId, btn.dataset.userName, group.id));
+                });
+            }
+        }
+
+        // ─── KICK MEMBER ─────────────────────────────────────────────────────────
+        async function kickMember(userId, userName, groupId) {
+            if (!confirm(`Remove ${userName} from this group? They can rejoin anytime.`)) return;
+            try {
+                const { error } = await supabase.from('group_members')
+                    .delete()
+                    .eq('group_id', groupId)
+                    .eq('user_id', userId);
+                if (error) throw error;
+                showToast(`${userName} has been removed. 👋`, 'success');
+                // Refresh the modal
+                openMembersModal(activeGroup, true);
+                fetchGroups();
+            } catch (err) {
+                showToast('Error removing member: ' + err.message, 'error');
+            }
+        }
+
+        // ─── CLOSE MEMBERS MODAL ─────────────────────────────────────────────────
+        document.getElementById('close-members-modal').addEventListener('click', () => {
+            document.getElementById('members-modal').classList.add('hidden');
+            document.getElementById('members-modal').classList.remove('flex');
+            activeGroup = null;
+        });
+
+        // ─── DELETE GROUP (with name confirmation) ────────────────────────────────
+        const delInput = document.getElementById('delete-confirm-input');
+        const delBtn = document.getElementById('confirm-delete-btn');
+
+        delInput.addEventListener('input', () => {
+            const match = activeGroup && delInput.value.trim().toLowerCase() === activeGroup.name.toLowerCase();
+            delBtn.disabled = !match;
+        });
+
+        delBtn.addEventListener('click', async () => {
+            if (!activeGroup) return;
+            if (activeGroup.created_by !== currentUser.uid) {
+                showToast('Only the group owner can delete this group.', 'error');
+                return;
+            }
+
+            delBtn.textContent = 'Deleting...';
+            delBtn.disabled = true;
+
+            try {
+                // Delete all posts in the group first (cascade may not cover app logic)
+                await supabase.from('posts').delete().eq('group_id', activeGroup.id);
+
+                // Delete the group (cascade will clean group_members automatically)
+                const { error } = await supabase.from('groups').delete().eq('id', activeGroup.id);
+                if (error) throw error;
+
+                document.getElementById('members-modal').classList.add('hidden');
+                document.getElementById('members-modal').classList.remove('flex');
+                activeGroup = null;
+                showToast('Group permanently deleted.', 'success');
+                fetchGroups();
+            } catch (err) {
+                showToast('Error deleting group: ' + err.message, 'error');
+                delBtn.textContent = 'Delete Group Permanently';
+                delBtn.disabled = false;
+            }
+        });
+
+        // ─── CREATE GROUP MODAL ──────────────────────────────────────────────────
+        const createModal = document.getElementById('create-group-modal');
+        function openCreateModal() { createModal.classList.remove('hidden'); createModal.classList.add('flex'); }
+        function closeCreateModal() { createModal.classList.add('hidden'); createModal.classList.remove('flex'); }
+
+        document.getElementById('create-group-btn').addEventListener('click', openCreateModal);
+        document.getElementById('cancel-group-btn').addEventListener('click', closeCreateModal);
+        document.getElementById('cancel-group-btn-2').addEventListener('click', closeCreateModal);
+
+        // Close modals on backdrop click
+        createModal.addEventListener('click', e => { if (e.target === createModal) closeCreateModal(); });
+        document.getElementById('members-modal').addEventListener('click', e => {
+            if (e.target === document.getElementById('members-modal')) {
+                document.getElementById('members-modal').classList.add('hidden');
+                document.getElementById('members-modal').classList.remove('flex');
+                activeGroup = null;
+            }
+        });
+        document.getElementById('leave-modal').addEventListener('click', e => {
+            if (e.target === document.getElementById('leave-modal')) closeLeaveModal();
+        });
+
         const form = document.getElementById('create-group-form');
-
-        btn.addEventListener('click', () => { modal.classList.remove('hidden'); modal.classList.add('flex'); });
-        cancelBtn.addEventListener('click', () => { modal.classList.add('hidden'); modal.classList.remove('flex'); });
-
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = form.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('create-submit-btn');
             submitBtn.textContent = 'Creating...';
             submitBtn.disabled = true;
 
-            const name = document.getElementById('group-name').value;
-            const description = document.getElementById('group-desc').value;
+            const name = document.getElementById('group-name').value.trim();
+            const description = document.getElementById('group-desc').value.trim();
 
             try {
-                const { error } = await supabase.from('groups').insert({
+                // Create the group
+                const { data: newGroup, error } = await supabase.from('groups').insert({
                     name,
                     description,
                     created_by: currentUser.uid
-                });
-
+                }).select().single();
                 if (error) throw error;
 
-                form.reset();
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                fetchGroups();
+                // Auto-join: add creator as first member
+                await supabase.from('group_members').insert({
+                    group_id: newGroup.id,
+                    user_id: currentUser.uid
+                });
 
+                form.reset();
+                closeCreateModal();
+                showToast(`"${name}" created! You're automatically a member. 🎉`, 'success');
+                fetchGroups();
             } catch (err) {
-                showToast("Error: " + err.message, "error");
+                showToast('Error: ' + err.message, 'error');
             } finally {
                 submitBtn.textContent = 'Create';
                 submitBtn.disabled = false;
