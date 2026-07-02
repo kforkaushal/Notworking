@@ -381,6 +381,79 @@
             animation: slide-up 0.3s ease-out;
         }
     </style>
+    <!-- ONBOARDING WELCOME WIZARD -->
+    <div id="onboarding-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-up flex flex-col">
+            <!-- Modal Banner/Header (Funny Satirical Header) -->
+            <div class="bg-gradient-to-r from-red-500 to-amber-500 p-6 text-white text-center relative">
+                <h2 class="text-2xl font-black tracking-tight" id="onboarding-title">Welcome to NotWorking! 🤡</h2>
+                <p class="text-white/80 text-sm mt-1">Celebrating horizontal career advancement since 2026</p>
+                <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border-2 border-white rounded-full p-2 text-white">
+                    <span id="onboarding-step-indicator" class="text-xs font-bold px-2">1 of 3</span>
+                </div>
+            </div>
+
+            <!-- Modal Body Content -->
+            <div class="p-6 pt-10 flex-1 flex flex-col justify-center min-h-[300px]">
+                <!-- Step 1: Introduction (What we are, what we do) -->
+                <div id="onboarding-step-1" class="space-y-4 text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
+                        <i data-lucide="coffee" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">The Anti-LinkedIn Professional Network</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed text-center">
+                        We are here to help you announce your lack of career advancement with pride. Here we share layoff stories, napping methodologies, HR ghosting updates, and celebrate napping! No toxic positivity. No hustle culture.
+                    </p>
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs text-slate-500 text-center">
+                        <strong>Rule #1:</strong> Never ask for a referral. Always complain about recruiters.
+                    </div>
+                </div>
+
+                <!-- Step 2: Account Setup (Quick Profile Configuration) -->
+                <div id="onboarding-step-2" class="space-y-4 hidden">
+                    <h3 class="text-xl font-bold text-slate-800 text-center">Let's Set Up Your Profile</h3>
+                    <p class="text-slate-500 text-xs text-center -mt-2">Customize your professional slacker bio</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase">Your Slacker Bio</label>
+                            <input type="text" id="onboarding-bio" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Thrilled to announce... nothing. Absolutely nothing. 🤡">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase">Lack of Experience</label>
+                            <input type="text" id="onboarding-experience" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Expert napper and professional recruiter ghostee.">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase">Skills (comma-separated)</label>
+                            <input type="text" id="onboarding-skills" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Sleeping, Applying at 3AM, Procrastinating">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: First Post Guidance -->
+                <div id="onboarding-step-3" class="space-y-4 text-center hidden">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-500">
+                        <i data-lucide="send" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Shout into the Void</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed text-center">
+                        Ready to make your first update? We will focus the feed editor for you and set up a funny draft. Let the world know you've joined.
+                    </p>
+                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-600 font-semibold italic text-center">
+                        "Just signed up for NotWorking! Ready to start ignoring responsibilities. 🥱"
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between">
+                <button id="onboarding-skip-btn" class="text-xs text-slate-400 hover:text-slate-600 font-bold uppercase tracking-wider">Skip Tour</button>
+                <button id="onboarding-next-btn" class="px-6 py-2 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                    <span>Continue</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
         // This script tag is intentionally left for lucide icons initialization if needed later.
@@ -881,6 +954,15 @@
                 // Start Feed
                 if (currentPage === 0) fetchPosts();
 
+                // Onboarding Check
+                if (localStorage.getItem('nw_onboarded') !== 'true') {
+                    // Google user profiles and fresh email signups don't have customized bios in profiles.
+                    const isNewUser = !profile || !profile.bio;
+                    if (isNewUser) {
+                        startOnboardingFlow(profile);
+                    }
+                }
+
                 // Start listening for notifications
                 // --- GLOBAL REALTIME NOTIFICATION FOR NEW MESSAGES ---
                 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
@@ -1020,15 +1102,35 @@
 
         // Realtime Updates
         supabase.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async (payload) => {
+            const newPostId = payload.new.id;
+
+            // 1. Prevent duplicate rendering if we are the one who created it (optimistic UI already rendered it)
+            if (document.querySelector(`.like-btn[data-post-id="${newPostId}"]`)) return;
+
+            // 2. Filter by group context to make sure group posts don't leak into public feed (and vice versa)
+            const postGroupId = payload.new.group_id;
+            if (currentGroupId) {
+                if (String(postGroupId) !== String(currentGroupId)) return;
+            } else {
+                if (postGroupId !== null) return;
+            }
+
             // A new post has been inserted, let's fetch its full data
             const { data: newPost, error } = await supabase.from('posts')
                 .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
-                .eq('id', payload.new.id)
+                .eq('id', newPostId)
                 .single();
 
             if (newPost && !error) {
-                const postElement = createPostElement(newPost);
-                document.getElementById('feed-posts-container').prepend(postElement);
+                const postElement = createPostElement(newPost, currentUser);
+                const container = document.getElementById('feed-posts-container');
+
+                // Remove "No posts yet" message if present
+                if (container.children.length === 1 && container.firstElementChild.innerText.includes("No posts")) {
+                    container.innerHTML = '';
+                }
+
+                container.prepend(postElement);
                 lucide.createIcons({ nodes: [postElement] }); // Render icons for the new post
             }
         }).subscribe();
@@ -1137,6 +1239,114 @@
                 searchTimeout = setTimeout(() => performSearch(searchTerm, resultsContainer), 300);
             });
         });
+
+        // --- ONBOARDING TOUR LOGIC ---
+        let onboardingStep = 1;
+
+        function startOnboardingFlow(profile) {
+            const modal = document.getElementById('onboarding-modal');
+            if (!modal) return;
+            
+            // Pre-fill profile fields if we have any existing profile data
+            if (profile) {
+                if (profile.bio) document.getElementById('onboarding-bio').value = profile.bio;
+                if (profile.experience) document.getElementById('onboarding-experience').value = profile.experience;
+                if (profile.skills) document.getElementById('onboarding-skills').value = Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons({ nodes: [modal] });
+
+            const nextBtn = document.getElementById('onboarding-next-btn');
+            const skipBtn = document.getElementById('onboarding-skip-btn');
+
+            const steps = [
+                document.getElementById('onboarding-step-1'),
+                document.getElementById('onboarding-step-2'),
+                document.getElementById('onboarding-step-3')
+            ];
+
+            const indicator = document.getElementById('onboarding-step-indicator');
+            const title = document.getElementById('onboarding-title');
+
+            async function goToNextStep() {
+                if (onboardingStep === 1) {
+                    // Go to Step 2
+                    steps[0].classList.add('hidden');
+                    steps[1].classList.remove('hidden');
+                    onboardingStep = 2;
+                    indicator.textContent = "2 of 3";
+                    title.textContent = "Customize Your Profile 👤";
+                    lucide.createIcons({ nodes: [modal] });
+                } else if (onboardingStep === 2) {
+                    // Save profile info to Supabase
+                    nextBtn.disabled = true;
+                    nextBtn.innerHTML = `<span>Saving...</span> <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`;
+                    lucide.createIcons({ nodes: [nextBtn] });
+
+                    const bio = document.getElementById('onboarding-bio').value.trim();
+                    const experience = document.getElementById('onboarding-experience').value.trim();
+                    const skills = document.getElementById('onboarding-skills').value.split(',').map(s => s.trim()).filter(Boolean);
+
+                    try {
+                        const { error } = await supabase.from('profiles').upsert({
+                            id: currentUser.uid,
+                            bio: bio,
+                            experience: experience,
+                            skills: skills,
+                            updated_at: new Date().toISOString()
+                        });
+                        if (error) throw error;
+                        
+                        showGlobalToast("Profile updated! Slacker credentials established. 🎓", "success");
+                    } catch (e) {
+                        console.error("Onboarding Profile Save Error:", e);
+                        showGlobalToast("Failed to save credentials: " + e.message, "error");
+                    }
+
+                    nextBtn.disabled = false;
+                    nextBtn.innerHTML = `<span>Continue</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
+
+                    // Go to Step 3
+                    steps[1].classList.add('hidden');
+                    steps[2].classList.remove('hidden');
+                    onboardingStep = 3;
+                    indicator.textContent = "3 of 3";
+                    title.textContent = "Let the Void Know! 📢";
+                    nextBtn.querySelector('span').textContent = "Start Posting";
+                    lucide.createIcons({ nodes: [modal] });
+                } else if (onboardingStep === 3) {
+                    // Complete onboarding
+                    completeOnboarding();
+                }
+            }
+
+            function completeOnboarding() {
+                localStorage.setItem('nw_onboarded', 'true');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                
+                // Prefill first post & focus editor
+                const postInput = document.getElementById('post-input');
+                if (postInput) {
+                    postInput.value = "Just signed up for NotWorking! Ready to start ignoring responsibilities. 🥱";
+                    postInput.focus();
+                    
+                    // Smooth scroll to the post box
+                    const postCard = postInput.closest('.bg-white');
+                    if (postCard) {
+                        postCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+
+            nextBtn.addEventListener('click', goToNextStep);
+            skipBtn.addEventListener('click', () => {
+                completeOnboarding();
+                showGlobalToast("Skipped tour. Direct entry into unproductivity. 🥱", "info");
+            });
+        }
 
         lucide.createIcons();
     </script>

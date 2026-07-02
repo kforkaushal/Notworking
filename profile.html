@@ -257,13 +257,13 @@
                         supabase.from('saved_posts').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds)
                     ]);
                     
-                    const likeStates = (likesRes.data || []).reduce((acc, like) => ({ ...acc, [like.post_id]: true }), {});
-                    const saveStates = (savesRes.data || []).reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
+                    const likeStates = (likesRes.data || []).reduce((acc, like) => ({ ...acc, [String(like.post_id)]: true }), {});
+                    const saveStates = (savesRes.data || []).reduce((acc, save) => ({ ...acc, [String(save.post_id)]: true }), {});
 
                     posts = posts.map(post => ({
                         ...post,
-                        is_liked_by_user: !!likeStates[post.id],
-                        is_saved_by_user: !!saveStates[post.id]
+                        is_liked_by_user: !!likeStates[String(post.id)],
+                        is_saved_by_user: !!saveStates[String(post.id)]
                     }));
                 } catch (err) {
                     console.error("Error fetching post states:", err);
@@ -603,7 +603,7 @@
                 const newUsername = document.getElementById('edit-username').value || document.getElementById('profile-username').textContent.substring(1);
                 const newBio = document.getElementById('edit-bio').value;
                 const newExp = document.getElementById('edit-experience').value;
-                const newSkills = document.getElementById('edit-skills').value.split(',');
+                const newSkills = document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(Boolean);
 
                 let avatarUrl = document.getElementById('profile-image').src;
                 if (newAvatarFile) {

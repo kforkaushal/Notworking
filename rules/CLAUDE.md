@@ -96,6 +96,8 @@ Format:
 
 ```
 ## Learnings
+- [2026-07-02] Always use relative paths (`../`) in subdirectory pages like `Auth/` for redirects and asset links instead of domain-absolute paths (`/`) to support arbitrary hosting subdirectory contexts.
+- [2026-07-02] Explicitly convert Postgres BigInt IDs to string keys (e.g. `String(id)`) when mapping and looking up client-side state maps to prevent numeric/string comparison mismatches.
 - [date] Never use first-person pronouns in generated commit messages.
 - [date] Project uses pnpm, not npm — always check package manager first.
 - [date] Auth routes require .env.local, not .env — check both before

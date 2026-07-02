@@ -134,14 +134,14 @@
 
                 if (profile) {
                     // Profile exists, redirect them away from setup.
-                    window.location.href = '/profile.html';
+                    window.location.href = '../profile.html';
                 } else {
                     // Pre-fill name from Google/Firebase auth if available
                     document.getElementById('fullname').value = user.displayName || '';
                 }
             } else {
                 // Not logged in, redirect to login
-                window.location.href = '/Auth/login.html';
+                window.location.href = 'login.html';
             }
         });
 
@@ -170,7 +170,7 @@
             const formProps = Object.fromEntries(formData);
 
             try {
-                let avatarUrl = currentUser.photoURL || `..${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/src/assets/avatar.png`;
+                let avatarUrl = currentUser.photoURL || '../src/assets/avatar.png';
                 const newUsername = formProps.username.trim().toLowerCase();
 
                 // 0. Check if username is unique before doing anything else
@@ -222,7 +222,7 @@
                 if (error) throw error;
 
                 // 5. Redirect to profile page
-                window.location.href = `/profile.html`;
+                window.location.href = '../profile.html';
 
             } catch (error) {
                 console.error("Setup Error:", error);

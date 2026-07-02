@@ -69,7 +69,7 @@ export function createPostElement(post, currentUser, options = {}) {
     }
 
     const div = document.createElement('div');
-    div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group";
+    div.className = "post-card bg-white p-5 rounded-2xl shadow border border-slate-200 mb-6 relative group overflow-hidden";
     div.dataset.authorId = post.user_id;
 
     let mediaHTML = '';
@@ -98,7 +98,7 @@ export function createPostElement(post, currentUser, options = {}) {
                     <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</p>
                 </div>
             </div>
-            <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap">${escapeHtml(post.content || '')}</p>
+            <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap break-words" style="overflow-wrap:anywhere;word-break:break-word">${escapeHtml(post.content || '')}</p>
             ${mediaHTML}
             
             <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm font-medium">
