@@ -386,7 +386,7 @@
         // FIX 1: Changed "../Data" to "./Data" so imports work from the root folder
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
-        import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { createPostElement, createPostSkeleton, showToast as showGlobalToast } from './shared/ui.js';
 
         let currentPage = 0;
@@ -486,7 +486,7 @@
                 };
 
                 const container = document.getElementById("feed-posts-container");
-                const newPostEl = createPostElement(newPost);
+                const newPostEl = createPostElement(newPost, currentUser);
 
                 // Remove "No posts yet" message if present
                 if (container.children.length === 1 && container.firstElementChild.innerText.includes("No posts")) {

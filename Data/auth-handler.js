@@ -111,7 +111,7 @@ export async function handleGoogleAuth() {
         console.log("New Google user, creating profiles in Firestore and Supabase...");
 
         // Generate a random username for Google users
-        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const randomSuffix = Math.random().toString(36).substring(2, 10); // ~2.8 billion combos
         const username = `user_${randomSuffix}`;
 
         // Create in Firestore

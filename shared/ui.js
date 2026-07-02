@@ -41,6 +41,13 @@ export function showToast(message, type = 'info') {
     }, 3500);
 }
 
+// Sanitize user content before inserting into innerHTML (prevent stored XSS)
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
 // Common Rendering for Post Elements
 export function createPostElement(post, currentUser, options = {}) {
     const isOwner = currentUser && post.user_id === currentUser.uid;
@@ -91,7 +98,7 @@ export function createPostElement(post, currentUser, options = {}) {
                     <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleString()}</p>
                 </div>
             </div>
-            <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap">${post.content || ''}</p>
+            <p class="mt-3 text-slate-800 text-lg whitespace-pre-wrap">${escapeHtml(post.content || '')}</p>
             ${mediaHTML}
             
             <div class="flex items-center gap-6 mt-6 border-t border-slate-100 pt-4 text-slate-500 text-sm font-medium">

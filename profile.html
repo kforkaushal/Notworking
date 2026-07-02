@@ -48,7 +48,7 @@
     <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
-            <div class="flex items-center gap-4 hidden sm:flex">
+            <div class="hidden sm:flex items-center gap-4">
                 <a href="feed.html"
                     class="text-slate-500 hover:text-blue-600 font-bold text-sm flex items-center gap-2">
                     <i data-lucide="arrow-left" class="w-5 h-5 sm:hidden"></i>
@@ -185,7 +185,7 @@
     <script type="module">
         import { auth, db } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
-        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
         import { createPostElement, createPostSkeleton, showToast } from './shared/ui.js';
 

@@ -375,26 +375,9 @@
 
     <!-- Firebase -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJkwj31bOO08cxsYlHPqUvi9JChFr_cPY",
-            authDomain: "we-notworking.firebaseapp.com",
-            projectId: "we-notworking",
-            storageBucket: "we-notworking.appspot.com",
-            messagingSenderId: "768738291896",
-            appId: "1:768738291896:web:c55d1b896c7946bf5c444d",
-            measurementId: "G-5VTB19KMZJ"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        // Use shared Firebase client — avoids double-initialization error
+        import { auth } from './Data/firebase-client.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
         // --- DYNAMIC CTA BUTTONS ---
         onAuthStateChanged(auth, (user) => {
