@@ -697,8 +697,13 @@
                 .eq('user_id', currentUser.uid)
                 .in('post_id', postIds);
 
-            if (error) return {};
-            return data.reduce((acc, like) => ({ ...acc, [like.post_id]: true }), {});
+            if (error) {
+                // Log so we can see RLS or schema issues in console
+                console.warn('getPostLikeStates failed (RLS policy missing?):', error.message);
+                return {};
+            }
+            // Use String keys to prevent bigint vs number mismatch when looking up post.id
+            return (data || []).reduce((acc, like) => ({ ...acc, [String(like.post_id)]: true }), {});
         }
 
         // --- FETCH POSTS (Safe Version) ---
@@ -751,8 +756,8 @@
 
                     posts = posts.map(post => ({
                         ...post,
-                        is_liked_by_user: !!likeStates[post.id],
-                        is_saved_by_user: !!saveStates[post.id]
+                        is_liked_by_user: !!likeStates[String(post.id)],
+                        is_saved_by_user: !!saveStates[String(post.id)]
                     }));
                 }
 
@@ -807,8 +812,11 @@
                 .eq('user_id', currentUser.uid)
                 .in('post_id', postIds);
 
-            if (error) return {};
-            return data.reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
+            if (error) {
+                console.warn('getPostSaveStates failed (RLS policy missing?):', error.message);
+                return {};
+            }
+            return (data || []).reduce((acc, save) => ({ ...acc, [String(save.post_id)]: true }), {});
         }
 
         // --- OPTIMIZATION: INTERSECTION OBSERVER FOR INFINITE SCROLL ---
