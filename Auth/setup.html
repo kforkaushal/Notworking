@@ -106,7 +106,7 @@
 
     <script type="module">
         import { auth } from '../Data/firebase-client.js';
-        import supabase from '../Data/supabase-client.js';
+        import supabase, { setSupabaseToken } from '../Data/supabase-client.js';
         import { uploadFile } from '../Data/auth-handler.js';
         import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -121,11 +121,9 @@
             if (user) {
                 currentUser = user;
                 // When the user is authenticated with Firebase,
-                // get the JWT and set it for Supabase.
-                const { data: { session } } = await supabase.auth.setSession({
-                    access_token: await user.getIdToken(),
-                    refresh_token: user.refreshToken,
-                });
+                // get the JWT and set it for Supabase manually.
+                const token = await user.getIdToken();
+                setSupabaseToken(token);
 
                 // Check if the user already has a profile.
                 const { data: profile, error } = await supabase

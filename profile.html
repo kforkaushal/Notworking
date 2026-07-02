@@ -183,10 +183,11 @@
     </div>
 
     <script type="module">
-        import { auth, db } from '../Data/firebase-client.js';
-        import supabase, { setSupabaseToken } from '../Data/supabase-client.js';
+        import { auth, db } from './Data/firebase-client.js';
+        import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { createPostElement, createPostSkeleton, showToast } from './shared/ui.js';
 
         let currentUser = null;
         let viewedProfileId = null;
@@ -216,11 +217,13 @@
         // --- FETCH & DISPLAY USER POSTS ---
         async function fetchUserPosts(userId) {
             const container = document.getElementById('user-posts-container');
-            container.innerHTML = '<div class="text-center py-8"><i data-lucide="loader-2" class="animate-spin w-8 h-8 mx-auto text-slate-400"></i></div>';
-            lucide.createIcons();
+            container.innerHTML = '';
+            for (let i = 0; i < 2; i++) {
+                container.appendChild(createPostSkeleton());
+            }
 
             // Fetch posts ONLY for this user
-            const { data: posts, error } = await supabase.from('posts')
+            let { data: posts, error } = await supabase.from('posts')
                 .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
@@ -229,6 +232,12 @@
 
             // Update Post Count Stat
             document.getElementById('posts-count').textContent = posts?.length || 0;
+
+            if (error) {
+                console.error("Error fetching posts:", error);
+                container.innerHTML = `<div class="p-4 text-red-700 bg-red-100 rounded-lg">Error loading posts: ${error.message}</div>`;
+                return;
+            }
 
             if (!posts || posts.length === 0) {
                 container.innerHTML = `
@@ -239,54 +248,197 @@
                 return;
             }
 
-            posts.forEach(post => {
-                // Reuse the card logic (simplified for inline script)
-                const div = document.createElement('div');
-                div.className = "bg-white p-5 rounded-lg border border-slate-200 mb-4 shadow-sm";
+            // Fetch like and save states if currentUser is logged in
+            if (currentUser && posts.length > 0) {
+                try {
+                    const postIds = posts.map(p => p.id);
+                    const [likesRes, savesRes] = await Promise.all([
+                        supabase.from('likes').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds),
+                        supabase.from('saved_posts').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds)
+                    ]);
+                    
+                    const likeStates = (likesRes.data || []).reduce((acc, like) => ({ ...acc, [like.post_id]: true }), {});
+                    const saveStates = (savesRes.data || []).reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
 
-                let mediaHTML = '';
-                if (post.media_url) {
-                    mediaHTML = post.media_type === 'video'
-                        ? `<video controls src="${post.media_url}" class="mt-3 rounded w-full max-h-80 object-cover"></video>`
-                        : `<img src="${post.media_url}" loading="lazy" class="mt-3 rounded w-full max-h-80 object-cover">`;
+                    posts = posts.map(post => ({
+                        ...post,
+                        is_liked_by_user: !!likeStates[post.id],
+                        is_saved_by_user: !!saveStates[post.id]
+                    }));
+                } catch (err) {
+                    console.error("Error fetching post states:", err);
                 }
+            }
 
-                // Delete button for owner
+            posts.forEach(post => {
+                const el = createPostElement(post, currentUser);
+                container.appendChild(el);
+            });
+            lucide.createIcons({ nodes: [container] });
+        }
+
+        // --- COMMENTS LOGIC ---
+        async function loadComments(postId, container) {
+            container.innerHTML = '<div class="text-xs text-slate-400 p-2">Loading...</div>';
+            const { data: comments } = await supabase.from('comments')
+                .select('id, user_id, content, created_at, profiles(username, avatar_url)')
+                .eq('post_id', postId).order('created_at', { ascending: true });
+
+            container.innerHTML = '';
+            if (!comments || !comments.length) {
+                container.innerHTML = '<div class="text-xs text-slate-400 p-2">No comments yet.</div>';
+                return;
+            }
+
+            comments.forEach(c => {
+                const isOwner = currentUser && c.user_id === currentUser.uid;
                 const deleteBtn = isOwner ? `
-                <button class="delete-post-btn text-slate-400 hover:text-red-500 float-right" data-id="${post.id}">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>` : '';
+                    <button class="delete-comment-btn text-slate-400 hover:text-red-500 transition p-1" title="Delete Comment" data-comment-id="${c.id}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>` : '';
 
+                const div = document.createElement('div');
+                div.className = "comment-item flex gap-2 mb-2 text-sm group";
                 div.innerHTML = `
-                ${deleteBtn}
-                <div class="flex gap-3">
-                    <img src="${post.profiles.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-bold text-sm">${post.profiles.full_name}</p>
-                        <p class="text-xs text-slate-500">${new Date(post.created_at).toLocaleDateString()}</p>
+                <img src="${c.profiles?.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-6 h-6 rounded-full mt-1 object-cover">
+                <div class="flex-1">
+                    <div class="bg-slate-50 p-2 rounded-lg relative">
+                        <div class="flex justify-between items-start">
+                            <span class="font-bold text-slate-900 text-xs">${c.profiles?.username || 'User'}</span>
+                            ${deleteBtn}
+                        </div>
+                        <p class="text-slate-700 mt-1">${c.content}</p>
                     </div>
-                </div>
-                <p class="mt-2 text-slate-800">${post.content || ''}</p>
-                ${mediaHTML}
-                <div class="mt-3 pt-3 border-t border-slate-100 flex gap-4 text-xs text-slate-500 font-bold">
-                    <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3"></i> ${post.likes[0]?.count || 0}</span>
-                    <span class="flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i> ${post.comments[0]?.count || 0}</span>
-                </div>
-            `;
+                </div>`;
                 container.appendChild(div);
             });
-            lucide.createIcons();
+            lucide.createIcons({ nodes: [container] });
+        }
 
-            // Attach delete listeners
-            if (isOwner) {
-                document.querySelectorAll('.delete-post-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        if (!confirm("Delete this post?")) return;
-                        const { error } = await supabase.from('posts').delete().eq('id', btn.dataset.id);
-                        if (!error) btn.closest('div').remove();
-                    });
-                });
+        async function handleCommentSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const input = form.querySelector('input');
+            const content = input.value.trim();
+            const postId = form.dataset.postId;
+
+            if (!content || !currentUser) return;
+            input.value = '';
+
+            const { error } = await supabase.from('comments').insert({
+                post_id: postId, user_id: currentUser.uid, content
+            });
+
+            if (!error) {
+                loadComments(postId, form.previousElementSibling);
+                const btnSpan = form.closest('.post-card').querySelector('.comment-btn span');
+                if (btnSpan) btnSpan.textContent = parseInt(btnSpan.textContent) + 1;
+
+                const postCard = form.closest('.post-card');
+                if (postCard && postCard.dataset.authorId) {
+                    createNotification('comment', postId, postCard.dataset.authorId);
+                }
             }
+        }
+
+        // --- POST ACTIONS ---
+        async function handlePostAction(e) {
+            const btn = e.target.closest('button');
+            if (!btn || !currentUser) return;
+
+            const postId = btn.dataset.postId;
+
+            // LIKE
+            if (btn.classList.contains('like-btn')) {
+                const countSpan = btn.querySelector('span');
+                const icon = btn.querySelector('svg');
+                const isLiked = btn.classList.contains('text-red-500');
+
+                if (isLiked) {
+                    btn.classList.remove('text-red-500');
+                    if (icon) icon.classList.remove('fill-current');
+                    countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
+                    await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+                } else {
+                    btn.classList.add('text-red-500');
+                    if (icon) icon.classList.add('fill-current');
+                    countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                    await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
+
+                    const postCard = btn.closest('.post-card');
+                    if (postCard && postCard.dataset.authorId) {
+                        createNotification('like', postId, postCard.dataset.authorId);
+                    }
+                }
+            }
+
+            // COMMENTS TOGGLE
+            if (btn.classList.contains('comment-btn')) {
+                const card = btn.closest('.post-card');
+                const section = card.querySelector('.comment-section');
+                section.classList.toggle('hidden');
+                if (!section.classList.contains('hidden')) {
+                    loadComments(postId, section.querySelector('.comments-list'));
+                }
+            }
+
+            // DELETE
+            if (btn.classList.contains('delete-btn')) {
+                if (confirm("Delete this post?")) {
+                    const { error } = await supabase.from('posts').delete().eq('id', postId);
+                    if (!error) {
+                        btn.closest('.post-card').remove();
+                        const statEl = document.getElementById('posts-count');
+                        if (statEl) statEl.textContent = Math.max(0, parseInt(statEl.textContent) - 1);
+                    }
+                }
+            }
+
+            // SAVE
+            if (btn.classList.contains('save-btn')) {
+                const icon = btn.querySelector('svg');
+                const span = btn.querySelector('span');
+                const isSaved = btn.classList.contains('text-green-500');
+
+                if (isSaved) {
+                    btn.classList.remove('text-green-500');
+                    if (icon) icon.classList.remove('fill-current');
+                    if (span) span.textContent = 'Save';
+                    await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+                } else {
+                    btn.classList.add('text-green-500');
+                    if (icon) icon.classList.add('fill-current');
+                    if (span) span.textContent = 'Saved';
+                    await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
+                }
+            }
+
+            // DELETE COMMENT
+            if (btn.classList.contains('delete-comment-btn')) {
+                const commentId = btn.dataset.commentId;
+                if (confirm("Delete this comment?")) {
+                    const { error } = await supabase.from('comments').delete().eq('id', commentId);
+                    if (!error) {
+                        const commentDiv = btn.closest('.comment-item');
+                        if (commentDiv) commentDiv.remove();
+
+                        const postCard = btn.closest('.post-card');
+                        const countSpan = postCard.querySelector('.comment-btn span');
+                        if (countSpan) countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
+                    } else {
+                        showToast("Error deleting comment: " + error.message, 'error');
+                    }
+                }
+            }
+        }
+
+        // --- ATTACH EVENT LISTENERS ---
+        const postsContainer = document.getElementById('user-posts-container');
+        if (postsContainer) {
+            postsContainer.addEventListener('click', handlePostAction);
+            postsContainer.addEventListener('submit', (e) => {
+                if (e.target.classList.contains('comment-form')) handleCommentSubmit(e);
+            });
         }
 
         // --- LOAD PROFILE ---
@@ -477,7 +629,7 @@
 
                 window.location.reload();
             } catch (err) {
-                alert(`Error: ${err.message}`);
+                showToast(`Error: ${err.message}`, "error");
             } finally {
                 btn.textContent = "Save";
                 btn.disabled = false;
@@ -581,7 +733,7 @@
                     }, 2000);
                 }).catch(err => {
                     console.error('Failed to copy link: ', err);
-                    alert('Could not copy link to clipboard.');
+                    showToast('Could not copy link to clipboard.', 'error');
                 });
             });
         }

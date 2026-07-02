@@ -169,6 +169,7 @@
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { showToast } from './shared/ui.js';
 
         let currentUser = null;
         let activeConversationUserId = null;
@@ -361,7 +362,7 @@
 
             if (error) {
                 console.error('Error sending message:', error);
-                alert('Failed to send message.');
+                showToast('Failed to send message.', 'error');
                 // Optionally, add logic to show a "failed" state on the message
             }
         }

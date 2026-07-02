@@ -74,7 +74,9 @@
         import { auth } from '../Data/firebase-client.js';
         import {
             applyActionCode,
-            checkActionCode
+            checkActionCode,
+            verifyPasswordResetCode,
+            confirmPasswordReset
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
         // --- UI Elements ---
@@ -83,6 +85,7 @@
         const messageState = document.getElementById('message-state');
         const resetPasswordForm = document.getElementById('reset-password-form');
         const formStatus = document.getElementById('form-status');
+        let resetCode = null;
 
         // --- Helper to show a final message ---
         function showMessage(type, title, body, buttonText = 'Continue to Login') {
@@ -116,6 +119,9 @@
                     case 'verifyEmail':
                         await handleVerifyEmail(actionCode);
                         break;
+                    case 'resetPassword':
+                        await handleResetPassword(actionCode);
+                        break;
                     default:
                         showMessage('error', 'Unsupported Action', 'This action is not supported.');
                 }
@@ -136,6 +142,43 @@
                 'Login to your Account'
             );
         }
+
+        async function handleResetPassword(actionCode) {
+            // Verify code first
+            await verifyPasswordResetCode(auth, actionCode);
+            resetCode = actionCode;
+            
+            // Hide loading, show form
+            loadingState.classList.add('hidden');
+            resetPasswordState.classList.remove('hidden');
+        }
+
+        // --- Form Event Listeners ---
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            if (!newPassword || !resetCode) return;
+
+            formStatus.classList.remove('hidden');
+            formStatus.className = "text-sm text-center p-3 rounded-md bg-slate-100 text-slate-700";
+            formStatus.textContent = "Updating password...";
+
+            try {
+                await confirmPasswordReset(auth, resetCode, newPassword);
+                formStatus.className = "text-sm text-center p-3 rounded-md bg-green-100 text-green-700";
+                formStatus.textContent = "Password successfully reset!";
+                
+                // Show success screen after a short delay
+                setTimeout(() => {
+                    resetPasswordState.classList.add('hidden');
+                    showMessage('success', 'Password Reset Complete', 'Your password has been updated successfully. You can now log in with your new password.');
+                }, 1500);
+            } catch (error) {
+                console.error("Password reset confirmation failed:", error);
+                formStatus.className = "text-sm text-center p-3 rounded-md bg-red-100 text-red-700";
+                formStatus.textContent = error.message || "Failed to reset password. The link may be expired.";
+            }
+        });
 
         lucide.createIcons();
     </script>

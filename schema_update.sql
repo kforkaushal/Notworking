@@ -23,10 +23,6 @@ create table if not exists public.notifications (
   user_id text not null, -- The recipient
   actor_id text not null, -- The person who triggered it
   type text not null check (type in ('like', 'comment', 'follow', 'system')),
-  id uuid default gen_random_uuid() primary key,
-  user_id text not null, -- The recipient
-  actor_id text not null, -- The person who triggered it
-  type text not null check (type in ('like', 'comment', 'follow', 'system')),
   post_id bigint references public.posts(id) on delete cascade, -- Explicit link to posts (bigint)
   is_read boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
