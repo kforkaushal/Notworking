@@ -10,7 +10,8 @@ import {
     sendPasswordResetEmail,
     setPersistence,
     browserLocalPersistence,
-    browserSessionPersistence
+    browserSessionPersistence,
+    signOut
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
@@ -21,12 +22,44 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
 export async function setSupabaseSession(user) {
     try {
         const token = await user.getIdToken();
-        // Manually set the token to bypass Supabase Auth (GoTrue) validation of RS256 signatures
         setSupabaseToken(token);
         console.log('Supabase token set successfully (manual override).');
     } catch (error) {
         console.error('Error setting Supabase session:', error);
-        throw error; // Re-throw to be caught by the caller
+        throw error;
+    }
+}
+
+/**
+ * Force-refreshes the Firebase JWT and re-authorises the Supabase client.
+ * Call this after long idle periods to avoid 401 errors on Supabase queries.
+ * @param {import("firebase/auth").User} user
+ */
+export async function refreshSupabaseSession(user) {
+    try {
+        const freshToken = await user.getIdToken(/* forceRefresh */ true);
+        setSupabaseToken(freshToken);
+        console.log('Supabase token silently refreshed.');
+    } catch (error) {
+        console.error('Failed to refresh Supabase session:', error);
+        throw error;
+    }
+}
+
+/**
+ * Signs the user out of Firebase and clears the Supabase authorisation token.
+ * Redirects to the login page after clearing state.
+ */
+export async function handleLogout() {
+    try {
+        setSupabaseToken(null); // Wipe Supabase token first
+        await signOut(auth);   // Then sign out of Firebase
+        localStorage.removeItem('nw_signing_up');
+        localStorage.removeItem('nw_just_onboarded');
+        window.location.href = '/Auth/login.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+        throw error;
     }
 }
 

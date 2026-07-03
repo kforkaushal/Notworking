@@ -466,6 +466,8 @@
         let currentUser = null;
         let globalMessageListener = null;
         let globalNotificationChannel = null;
+        // Prevents double-click race conditions on like/unlike (flowchart fix #4)
+        const inFlightLikes = new Set();
 
         // Group Logic
         const urlParams = new URLSearchParams(window.location.search);
@@ -507,13 +509,32 @@
             return data.publicUrl;
         }
 
+        // --- FILE VALIDATION HELPER (flowchart fix #3) ---
+        const MAX_FILE_SIZE_MB = 50;
+        const ALLOWED_MIME_TYPES = ['image/jpeg','image/png','image/gif','image/webp','video/mp4','video/webm','video/ogg'];
+        function validateFile(file) {
+            if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+                return 'Unsupported file type. Please upload an image (JPG, PNG, GIF, WebP) or video (MP4, WebM, OGG).';
+            }
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                return `File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`;
+            }
+            return null; // valid
+        }
+
         // --- CREATE POST ---
         async function createPost() {
             if (!currentUser) return showGlobalToast("Login to post.", "error");
             const content = document.getElementById("post-input").value;
             const file = document.getElementById("file-input").files[0];
 
-            if (!content.trim() && !file) return showGlobalToast("Content required.", "error");
+            if (!content.trim() && !file) return showGlobalToast("Add text or media before posting.", "error");
+
+            // Client-side file validation before any upload attempt
+            if (file) {
+                const validationError = validateFile(file);
+                if (validationError) return showGlobalToast(validationError, "error");
+            }
 
             const btn = document.getElementById('post-btn');
             btn.disabled = true;
@@ -608,52 +629,54 @@
 
             const postId = btn.dataset.postId;
 
-            // LIKE
+            // LIKE (flowchart fixes: double-click guard + self-like notification guard)
             if (btn.classList.contains('like-btn')) {
+                // Guard: ignore if a DB request for this post is already in-flight
+                if (inFlightLikes.has(postId)) return;
+                inFlightLikes.add(postId);
+
                 const countSpan = btn.querySelector('span');
                 const icon = btn.querySelector('svg') || btn.querySelector('i');
                 const isLiked = btn.classList.contains('text-red-500');
 
-                // Optimistic UI updates
                 if (isLiked) {
+                    // Optimistic unlike
                     btn.classList.remove('text-red-500');
                     if (icon) icon.classList.remove('fill-current');
                     countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-
                     try {
                         const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
                         if (error) throw error;
                     } catch (err) {
-                        // Rollback on database failure
                         btn.classList.add('text-red-500');
                         if (icon) icon.classList.add('fill-current');
                         countSpan.textContent = parseInt(countSpan.textContent) + 1;
                         showGlobalToast("Failed to unlike post. Please check your connection.", "error");
-                        console.error("Unlike database error:", err);
+                        console.error("Unlike DB error:", err);
                     }
                 } else {
+                    // Optimistic like
                     btn.classList.add('text-red-500');
                     if (icon) icon.classList.add('fill-current');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
-
                     try {
                         const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
                         if (error) throw error;
-
-                        // Notify author only if database write succeeds
+                        // Only notify if liker is NOT the post author (self-like guard)
                         const postCard = btn.closest('.post-card');
-                        if (postCard && postCard.dataset.authorId) {
+                        if (postCard && postCard.dataset.authorId && postCard.dataset.authorId !== currentUser.uid) {
                             createNotification('like', postId, postCard.dataset.authorId);
                         }
                     } catch (err) {
-                        // Rollback on database failure
                         btn.classList.remove('text-red-500');
                         if (icon) icon.classList.remove('fill-current');
                         countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
                         showGlobalToast("Failed to like post. Please check your connection.", "error");
-                        console.error("Like database error:", err);
+                        console.error("Like DB error:", err);
                     }
                 }
+                // Release the in-flight lock
+                inFlightLikes.delete(postId);
             }
 
             // COMMENTS TOGGLE

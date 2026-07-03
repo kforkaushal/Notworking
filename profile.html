@@ -192,6 +192,8 @@
         let currentUser = null;
         let viewedProfileId = null;
         let isOwner = false;
+        // Prevents double-click race conditions on like/unlike (flowchart fix #4)
+        const inFlightLikes = new Set();
 
         // --- NOTIFICATION HELPER ---
         async function createNotification(type, entityId, recipientId) {
@@ -256,7 +258,7 @@
                         supabase.from('likes').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds),
                         supabase.from('saved_posts').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds)
                     ]);
-                    
+
                     if (likesRes.error) console.warn('profile likes query failed:', likesRes.error.message);
                     if (savesRes.error) console.warn('profile saves query failed:', savesRes.error.message);
 
@@ -349,54 +351,50 @@
             const btn = e.target.closest('button');
             if (!btn || !currentUser) return;
 
-            const postId = btn.dataset.postId;
-
-            // LIKE
+            const postId = btn.dataset.postId;            // LIKE (flowchart fixes: double-click guard + self-like notification guard)
             if (btn.classList.contains('like-btn')) {
+                if (inFlightLikes.has(postId)) return;
+                inFlightLikes.add(postId);
+
                 const countSpan = btn.querySelector('span');
                 const icon = btn.querySelector('svg') || btn.querySelector('i');
                 const isLiked = btn.classList.contains('text-red-500');
 
-                // Optimistic UI updates
                 if (isLiked) {
                     btn.classList.remove('text-red-500');
                     if (icon) icon.classList.remove('fill-current');
                     countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-
                     try {
                         const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
                         if (error) throw error;
                     } catch (err) {
-                        // Rollback on database failure
                         btn.classList.add('text-red-500');
                         if (icon) icon.classList.add('fill-current');
                         countSpan.textContent = parseInt(countSpan.textContent) + 1;
                         showToast("Failed to unlike post. Please check your connection.", "error");
-                        console.error("Unlike database error in profile.html:", err);
+                        console.error("Unlike DB error in profile.html:", err);
                     }
                 } else {
                     btn.classList.add('text-red-500');
                     if (icon) icon.classList.add('fill-current');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
-
                     try {
                         const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
                         if (error) throw error;
-
-                        // Notify author only if database write succeeds
+                        // Only notify if liker is NOT the post author (self-like guard)
                         const postCard = btn.closest('.post-card');
-                        if (postCard && postCard.dataset.authorId) {
+                        if (postCard && postCard.dataset.authorId && postCard.dataset.authorId !== currentUser.uid) {
                             createNotification('like', postId, postCard.dataset.authorId);
                         }
                     } catch (err) {
-                        // Rollback on database failure
                         btn.classList.remove('text-red-500');
                         if (icon) icon.classList.remove('fill-current');
                         countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
                         showToast("Failed to like post. Please check your connection.", "error");
-                        console.error("Like database error in profile.html:", err);
+                        console.error("Like DB error in profile.html:", err);
                     }
                 }
+                inFlightLikes.delete(postId);
             }
 
             // COMMENTS TOGGLE
@@ -542,17 +540,41 @@
             }
 
             btn.onclick = async () => {
-                if (btn.textContent === "Follow") {
-                    await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: viewedProfileId });
-                    createNotification('follow', null, viewedProfileId);
-                    btn.textContent = "Unfollow";
-                    btn.classList.add('bg-slate-500');
-                } else {
-                    await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId);
-                    btn.textContent = "Follow";
+                // Self-follow guard
+                if (currentUser && currentUser.uid === viewedProfileId) return;
+
+                const isFollowing = btn.textContent.trim() === 'Unfollow';
+
+                if (isFollowing) {
+                    // Optimistic unfollow
+                    btn.textContent = 'Follow';
                     btn.classList.remove('bg-slate-500');
+                    try {
+                        const { error } = await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId);
+                        if (error) throw error;
+                        fetchFollowStats(viewedProfileId);
+                    } catch (err) {
+                        btn.textContent = 'Unfollow';
+                        btn.classList.add('bg-slate-500');
+                        showToast('Failed to unfollow. Please try again.', 'error');
+                        console.error('Unfollow DB error:', err);
+                    }
+                } else {
+                    // Optimistic follow
+                    btn.textContent = 'Unfollow';
+                    btn.classList.add('bg-slate-500');
+                    try {
+                        const { error } = await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: viewedProfileId });
+                        if (error) throw error;
+                        createNotification('follow', null, viewedProfileId);
+                        fetchFollowStats(viewedProfileId);
+                    } catch (err) {
+                        btn.textContent = 'Follow';
+                        btn.classList.remove('bg-slate-500');
+                        showToast('Failed to follow. Please try again.', 'error');
+                        console.error('Follow DB error:', err);
+                    }
                 }
-                fetchFollowStats(viewedProfileId);
             };
         }
 

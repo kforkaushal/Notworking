@@ -30,6 +30,12 @@ export function setSupabaseToken(token) {
         if (supabase.headers) Object.assign(supabase.headers, headers);
 
         console.log("Supabase headers updated manually.");
+    } else {
+        // Clear the Authorization header on logout
+        if (supabase.rest && supabase.rest.headers) delete supabase.rest.headers['Authorization'];
+        if (supabase.functions && supabase.functions.headers) delete supabase.functions.headers['Authorization'];
+        if (supabase.headers) delete supabase.headers['Authorization'];
+        console.log("Supabase Authorization header cleared.");
     }
 }
 

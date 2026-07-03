@@ -137,7 +137,8 @@
     <script type="module">
         // Centralized clients
         import { auth } from '../Data/firebase-client.js';
-        import { handleEmailPasswordSignUp, handleGoogleAuth, displayError } from '../Data/auth-handler.js';
+        import supabase from '../Data/supabase-client.js';
+        import { handleEmailPasswordSignUp, handleGoogleAuth, displayError, setSupabaseSession } from '../Data/auth-handler.js';
 
         // Firebase functions for auth state
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
@@ -151,6 +152,7 @@
             if (user) {
                 console.log('User already logged in. Verifying Supabase session before redirect...');
                 try {
+                    await setSupabaseSession(user); // Set token before any Supabase queries
                     const { data: profile } = await supabase.from('profiles')
                         .select('username')
                         .eq('id', user.uid)
