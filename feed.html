@@ -409,34 +409,25 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Account Setup (Quick Profile Configuration) -->
-                <div id="onboarding-step-2" class="space-y-4 hidden">
-                    <h3 class="text-xl font-bold text-slate-800 text-center">Let's Set Up Your Profile</h3>
-                    <p class="text-slate-500 text-xs text-center -mt-2">Customize your professional slacker bio</p>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase">Your Slacker Bio</label>
-                            <input type="text" id="onboarding-bio" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Thrilled to announce... nothing. Absolutely nothing. 🤡">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase">Lack of Experience</label>
-                            <input type="text" id="onboarding-experience" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Expert napper and professional recruiter ghostee.">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase">Skills (comma-separated)</label>
-                            <input type="text" id="onboarding-skills" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="Sleeping, Applying at 3AM, Procrastinating">
-                        </div>
+                <!-- Step 2: Venting & Groups -->
+                <div id="onboarding-step-2" class="space-y-4 text-center hidden">
+                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-500">
+                        <i data-lucide="users" class="w-8 h-8"></i>
                     </div>
+                    <h3 class="text-xl font-bold text-slate-800">Venting Feed & Communities</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed text-center">
+                        Write posts to vent about your workday, like other slackers' rants, or comments. You can also join custom groups like <em>HR Ghost Stories</em> or <em>Nap-Time Strategies</em> to find your community!
+                    </p>
                 </div>
 
-                <!-- Step 3: First Post Guidance -->
+                <!-- Step 3: Real-Time Chat & WebRTC Calling -->
                 <div id="onboarding-step-3" class="space-y-4 text-center hidden">
                     <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-500">
-                        <i data-lucide="send" class="w-8 h-8"></i>
+                        <i data-lucide="phone-call" class="w-8 h-8"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800">Shout into the Void</h3>
+                    <h3 class="text-xl font-bold text-slate-800">Real-Time Messaging & Calling</h3>
                     <p class="text-slate-600 text-sm leading-relaxed text-center">
-                        Ready to make your first update? We will focus the feed editor for you and set up a funny draft. Let the world know you've joined.
+                        Need some real-time comfort? Open a chat in the Messages tab and trigger end-to-end WebRTC audio and video calls. Let's look busy together!
                     </p>
                     <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-600 font-semibold italic text-center">
                         "Just signed up for NotWorking! Ready to start ignoring responsibilities. 🥱"
@@ -926,53 +917,16 @@
                     console.error("Error querying profile in feed.html:", e);
                 }
 
-                // Lazy Profile Backfill: If profile doesn't exist in Supabase, create it on the fly
-                if (!profile) {
-                    console.log("No profile found for authenticated user in feed.html. Backfilling...");
-                    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                    const username = `user_${randomSuffix}`;
-
-                    const newProfileData = {
-                        id: user.uid,
-                        username: username,
-                        full_name: user.displayName || 'Anonymous User',
-                        email: user.email,
-                        avatar_url: user.photoURL || 'src/assets/avatar-placeholder.png',
-                        updated_at: new Date().toISOString()
-                    };
-
-                    const { data: backfilledProfile, error: backfillError } = await supabase
-                        .from('profiles')
-                        .upsert(newProfileData, { onConflict: 'id' })
-                        .select()
-                        .maybeSingle();
-
-                    if (!backfillError && backfilledProfile) {
-                        profile = backfilledProfile;
-                        console.log("Profile backfilled successfully in feed.html:", profile);
-
-                        // Also sync/create in Firestore
-                        try {
-                            const userRef = doc(db, "users", user.uid);
-                            await setDoc(userRef, {
-                                displayName: user.displayName || 'Anonymous User',
-                                username: username,
-                                email: user.email,
-                                photoURL: user.photoURL || 'src/assets/avatar-placeholder.png',
-                                badges: ["Early Adopter"],
-                                createdAt: new Date()
-                            }, { merge: true });
-                        } catch (fsError) {
-                            console.error("Firestore sync failed:", fsError);
-                        }
-                    } else {
-                        console.error("Failed to backfill profile in Supabase:", backfillError);
-                    }
+                // If profile is missing or incomplete (lacks bio/skills/experience/username/full_name), redirect to setup
+                if (!profile || !profile.username || !profile.full_name || !profile.bio || !profile.experience || !profile.skills) {
+                    console.log("Profile incomplete or missing. Redirecting to setup.html...");
+                    window.location.href = 'Auth/setup.html';
+                    return;
                 }
 
-                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
-                const name = user.displayName || 'User';
-                const email = user.email || '';
+                const photo = profile.avatar_url || 'src/assets/avatar-placeholder.png';
+                const name = profile.full_name || 'User';
+                const email = profile.email || user.email || '';
 
                 // Update UI elements
                 const updateEl = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
@@ -990,7 +944,7 @@
 
                 // Legacy Mobile Header (Hidden)
                 updateEl('nav-profile-img-mobile', 'src', photo);
-                if (profile) document.getElementById('nav-profile-link').href = `profile.html?username=${profile.username}`;
+                document.getElementById('nav-profile-link').href = `profile.html?username=${profile.username}`;
 
                 // Mobile Sidebar
                 updateEl('sidebar-profile-img-mobile', 'src', photo);
@@ -1002,7 +956,7 @@
 
                 updateEl('dropdown-user-name', 'textContent', name);
                 updateEl('dropdown-user-email', 'textContent', email);
-                if (profile) document.getElementById('view-profile-link').href = `profile.html?username=${profile.username}`;
+                document.getElementById('view-profile-link').href = `profile.html?username=${profile.username}`;
 
                 // FIX: Refresh all comment avatars that might have loaded before auth was ready
                 document.querySelectorAll('.current-user-avatar').forEach(img => {
@@ -1012,13 +966,10 @@
                 // Start Feed
                 if (currentPage === 0) fetchPosts();
 
-                // Onboarding Check
-                if (localStorage.getItem('nw_onboarded') !== 'true') {
-                    // Google user profiles and fresh email signups don't have customized bios in profiles.
-                    const isNewUser = !profile || !profile.bio;
-                    if (isNewUser) {
-                        startOnboardingFlow(profile);
-                    }
+                // Onboarding Check (Only if they just completed setup)
+                if (localStorage.getItem('nw_just_onboarded') === 'true') {
+                    localStorage.removeItem('nw_just_onboarded');
+                    startOnboardingFlow(profile);
                 }
 
                 // Start listening for notifications
@@ -1318,13 +1269,6 @@
         function startOnboardingFlow(profile) {
             const modal = document.getElementById('onboarding-modal');
             if (!modal) return;
-            
-            // Pre-fill profile fields if we have any existing profile data
-            if (profile) {
-                if (profile.bio) document.getElementById('onboarding-bio').value = profile.bio;
-                if (profile.experience) document.getElementById('onboarding-experience').value = profile.experience;
-                if (profile.skills) document.getElementById('onboarding-skills').value = Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills;
-            }
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1349,43 +1293,15 @@
                     steps[1].classList.remove('hidden');
                     onboardingStep = 2;
                     indicator.textContent = "2 of 3";
-                    title.textContent = "Customize Your Profile 👤";
+                    title.textContent = "Feed & Groups 📢";
                     lucide.createIcons({ nodes: [modal] });
                 } else if (onboardingStep === 2) {
-                    // Save profile info to Supabase
-                    nextBtn.disabled = true;
-                    nextBtn.innerHTML = `<span>Saving...</span> <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`;
-                    lucide.createIcons({ nodes: [nextBtn] });
-
-                    const bio = document.getElementById('onboarding-bio').value.trim();
-                    const experience = document.getElementById('onboarding-experience').value.trim();
-                    const skills = document.getElementById('onboarding-skills').value.split(',').map(s => s.trim()).filter(Boolean);
-
-                    try {
-                        const { error } = await supabase.from('profiles').upsert({
-                            id: currentUser.uid,
-                            bio: bio,
-                            experience: experience,
-                            skills: skills,
-                            updated_at: new Date().toISOString()
-                        });
-                        if (error) throw error;
-                        
-                        showGlobalToast("Profile updated! Slacker credentials established. 🎓", "success");
-                    } catch (e) {
-                        console.error("Onboarding Profile Save Error:", e);
-                        showGlobalToast("Failed to save credentials: " + e.message, "error");
-                    }
-
-                    nextBtn.disabled = false;
-                    nextBtn.innerHTML = `<span>Continue</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
-
                     // Go to Step 3
                     steps[1].classList.add('hidden');
                     steps[2].classList.remove('hidden');
                     onboardingStep = 3;
                     indicator.textContent = "3 of 3";
-                    title.textContent = "Let the Void Know! 📢";
+                    title.textContent = "Messaging & Calling 💬";
                     nextBtn.querySelector('span').textContent = "Start Posting";
                     lucide.createIcons({ nodes: [modal] });
                 } else if (onboardingStep === 3) {

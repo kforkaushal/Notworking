@@ -99,58 +99,28 @@ export async function handleGoogleAuth() {
 
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-
-    const additionalInfo = getAdditionalUserInfo(result);
     const user = result.user;
 
-    // Set Supabase session first to satisfy RLS policies, especially for new users
+    // Set Supabase session first to satisfy RLS policies
     await setSupabaseSession(user);
 
-    // Double-check if profile already exists in Supabase to handle edge cases where a user exists in Firebase but not in Supabase
-    let profileExists = false;
+    // Double-check if complete profile already exists in Supabase
+    let isNewUser = true;
     try {
-        const { data } = await supabase.from('profiles').select('id').eq('id', user.uid).maybeSingle();
-        if (data) profileExists = true;
-    } catch (e) {
-        console.warn("Could not check if profile exists in Supabase:", e);
-    }
+        const { data: profile } = await supabase.from('profiles')
+            .select('id, username, full_name, bio, experience, skills')
+            .eq('id', user.uid)
+            .maybeSingle();
 
-    // If it's a new user in Firebase OR profile is missing in Supabase, create their profiles
-    if (additionalInfo.isNewUser || !profileExists) {
-        console.log("New Google user or profile missing in Supabase, creating profiles in Firestore and Supabase...");
-
-        // Generate a random username for Google users
-        const randomSuffix = Math.random().toString(36).substring(2, 10); // ~2.8 billion combos
-        const username = `user_${randomSuffix}`;
-
-        // Create in Firestore
-        const userDocRef = doc(db, "users", user.uid);
-        try {
-            await setDoc(userDocRef, {
-                displayName: user.displayName,
-                username: username,
-                email: user.email,
-                photoURL: user.photoURL,
-                badges: ["Early Adopter"],
-                createdAt: serverTimestamp()
-            }, { merge: true });
-        } catch (fsError) {
-            console.error("Failed to write to Firestore:", fsError);
+        // A profile is complete if it exists and has username, full_name, bio, experience, and skills
+        if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+            isNewUser = false;
         }
-
-        // Create/upsert in Supabase
-        const { error: supabaseError } = await supabase.from('profiles').upsert({
-            id: user.uid,
-            full_name: user.displayName || 'Google User',
-            username: username,
-            avatar_url: user.photoURL,
-            email: user.email,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
-        if (supabaseError) throw supabaseError;
+    } catch (e) {
+        console.warn("Could not check if profile is complete in Supabase:", e);
     }
 
-    return user;
+    return { user, isNewUser };
 }
 
 /**

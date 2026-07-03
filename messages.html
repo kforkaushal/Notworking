@@ -150,16 +150,20 @@
     </div>
 
     <!-- Call Modal Overlay -->
-    <div id="call-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md hidden flex-col items-center justify-between p-8 text-white">
+    <div id="call-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md hidden flex-col items-center justify-between p-8 text-white select-none">
+        <!-- Background Gradients for Premium Aesthetics -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 -z-10"></div>
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] h-[350px] rounded-full bg-blue-500/10 blur-[80px] -z-10 animate-pulse"></div>
+
         <!-- Remote Video (Video Call only) -->
         <video id="remote-video" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
         
         <!-- Local Video Preview (Video Call only, pip) -->
-        <video id="local-video" class="absolute top-4 right-4 w-32 h-44 rounded-xl border border-white/20 object-cover shadow-2xl hidden" autoplay muted playsinline></video>
+        <video id="local-video" class="absolute top-4 right-4 w-32 h-44 rounded-xl border border-white/20 object-cover shadow-2xl hidden z-20" autoplay muted playsinline></video>
 
         <!-- Call Status & User Info Header -->
-        <div class="z-10 flex flex-col items-center text-center mt-12">
-            <div class="relative mb-6">
+        <div id="call-header" class="z-10 flex flex-col items-center text-center mt-12 transition-all duration-300">
+            <div id="call-avatar-wrapper" class="relative mb-6">
                 <!-- Outer glow rings for calling animation -->
                 <div id="call-avatar-ring" class="absolute -inset-4 rounded-full bg-blue-500/20 animate-ping hidden"></div>
                 <img id="call-avatar" src="src/assets/avatar-placeholder.png" class="w-32 h-32 rounded-full border-4 border-white/10 object-cover shadow-2xl">
@@ -451,6 +455,12 @@
             document.getElementById('call-timer').textContent = '00:00';
             document.getElementById('call-avatar-ring').classList.add('hidden');
 
+            // Restore hidden UI elements for future calls
+            document.getElementById('call-avatar-wrapper').classList.remove('hidden');
+            document.getElementById('call-user-name').classList.remove('hidden');
+            document.getElementById('call-status').classList.add('animate-pulse');
+            document.getElementById('call-status').textContent = 'Calling...';
+
             // Reset mute states and icons
             isMicMuted = false;
             isCamOff = false;
@@ -470,8 +480,33 @@
             lucide.createIcons();
         }
 
+        // --- CALL RINGING SIGNAL ---
+        function handleCallRingingSignal(envelope) {
+            const payload = envelope.payload;
+            if (isCaller && callSessionId === payload.callSessionId) {
+                document.getElementById('call-status').textContent = 'Ringing...';
+            }
+        }
+
         // --- INCOMING CALL SIGNAL ---
-        async function handleIncomingCallSignal(payload) {
+        async function handleIncomingCallSignal(envelope) {
+            const payload = envelope.payload;
+            
+            // Send call-ringing feedback broadcast back to caller
+            const callerChannelName = `user-calls:${payload.callerId}`;
+            const callerChannel = supabase.channel(callerChannelName);
+            callerChannel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    callerChannel.send({
+                        type: 'broadcast',
+                        event: 'call-ringing',
+                        payload: { callSessionId: payload.callSessionId }
+                    }).then(() => {
+                        supabase.removeChannel(callerChannel);
+                    });
+                }
+            });
+
             if (callSessionId) {
                 const busyChannel = supabase.channel(`call-session:${payload.callSessionId}`);
                 busyChannel.subscribe((status) => {
@@ -723,9 +758,20 @@
                         const remoteVideo = document.getElementById('remote-video');
                         remoteVideo.classList.remove('hidden');
                         remoteVideo.srcObject = remoteStream;
+
+                        // Premium UI/UX: Hide large avatar and centering info during active video feed
+                        document.getElementById('call-avatar-wrapper').classList.add('hidden');
+                        document.getElementById('call-user-name').classList.add('hidden');
+                        document.getElementById('call-status').textContent = 'Video Connected';
+                        document.getElementById('call-status').classList.remove('animate-pulse');
                     } else {
                         const remoteAudio = document.getElementById('remote-audio');
                         remoteAudio.srcObject = remoteStream;
+
+                        // Audio Connected State UI
+                        document.getElementById('call-status').textContent = 'Connected';
+                        document.getElementById('call-status').classList.remove('animate-pulse');
+                        document.getElementById('call-avatar-ring').classList.add('hidden');
                     }
                     startCallTimer();
                 }
@@ -753,7 +799,8 @@
             });
         }
 
-        function handleWebRTCOffer(payload) {
+        function handleWebRTCOffer(envelope) {
+            const payload = envelope.payload;
             initWebRTCPeer();
 
             peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp))
@@ -776,7 +823,8 @@
                 });
         }
 
-        function handleWebRTCAnswer(payload) {
+        function handleWebRTCAnswer(envelope) {
+            const payload = envelope.payload;
             if (peerConnection) {
                 peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp))
                     .catch(err => {
@@ -786,7 +834,8 @@
             }
         }
 
-        function handleWebRTCIce(payload) {
+        function handleWebRTCIce(envelope) {
+            const payload = envelope.payload;
             if (peerConnection) {
                 peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate))
                     .catch(err => console.error("Error adding ice candidate:", err));
@@ -1144,17 +1193,22 @@
                 await setSupabaseToken(await user.getIdToken());
 
                 // Update nav bar & store current user profile for calling
-                const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.uid).single();
+                const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.uid).maybeSingle();
+
+                if (!userProfile || !userProfile.username || !userProfile.full_name || !userProfile.bio || !userProfile.experience || !userProfile.skills) {
+                    console.log("Profile incomplete or missing. Redirecting to setup.html...");
+                    window.location.href = 'Auth/setup.html';
+                    return;
+                }
+
+                currentUserProfile = userProfile;
                 const navProfileImg = document.getElementById('nav-profile-img');
-                const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
+                const photo = userProfile.avatar_url || 'src/assets/avatar-placeholder.png';
                 navProfileImg.src = photo;
                 const mobileNavImg = document.getElementById('mobile-nav-profile-img');
                 if (mobileNavImg) mobileNavImg.src = photo;
-                if (userProfile) {
-                    currentUserProfile = userProfile;
-                    if (userProfile.username) {
-                        document.getElementById('nav-profile-link').href = `profile.html?username=${userProfile.username}`;
-                    }
+                if (userProfile.username) {
+                    document.getElementById('nav-profile-link').href = `profile.html?username=${userProfile.username}`;
                 }
 
                 // Register user-calls channel for incoming WebRTC call signaling
@@ -1163,6 +1217,7 @@
                 }
                 userCallsChannel = supabase.channel(`user-calls:${user.uid}`)
                     .on('broadcast', { event: 'incoming-call' }, handleIncomingCallSignal)
+                    .on('broadcast', { event: 'call-ringing' }, handleCallRingingSignal)
                     .subscribe();
 
                 // Load user's conversations

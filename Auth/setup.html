@@ -4,233 +4,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Your Profile - NotWorking</title>
+    <title>Complete Your Profile - NotWorking</title>
+    <meta name="description" content="Complete your NotWorking profile to start venting and doing absolutely nothing.">
     <link rel="icon" type="image/png" href="../src/assets/logo-white-circle.png">
+    
+    <!-- Styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="../style.css">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Comic+Neue:wght@700&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         .font-sans {
             font-family: 'Inter', sans-serif;
         }
     </style>
 </head>
 
-<body class="bg-slate-100 text-slate-900 font-sans antialiased">
+<body class="bg-gradient-to-tr from-slate-900 via-slate-800 to-blue-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col justify-center items-center p-4">
+    <!-- Glowing background elements -->
+    <div class="fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-500/10 blur-[100px] animate-pulse"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 blur-[100px] animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
 
-    <div class="min-h-screen flex flex-col items-center justify-center py-12">
-        <div class="max-w-2xl w-full mx-auto p-4">
-            <a href="../index.html" class="flex justify-center mb-8">
-                <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-16 w-auto">
-            </a>
+    <div class="max-w-xl w-full">
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+            <img src="../src/assets/logo.svg" alt="NotWorking Logo" class="h-14 w-auto brightness-200">
+        </div>
 
-            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">One Last Step!</h1>
-                    <p class="text-slate-500 mt-1">Set up your profile to join the void.</p>
+        <!-- Setup Card -->
+        <div class="bg-slate-900/60 border border-slate-700/50 backdrop-blur-xl p-8 rounded-3xl shadow-2xl space-y-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-extrabold tracking-tight text-white">Create Your Identity</h1>
+                <p class="text-slate-400 mt-2">Let the world know how unproductive you really are.</p>
+            </div>
+
+            <!-- Error message container -->
+            <div id="error-message" class="hidden p-4 rounded-xl text-sm bg-red-500/20 border border-red-500/50 text-red-200 text-center"></div>
+
+            <form id="setup-form" class="space-y-5">
+                <!-- Name & Username row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="fullname" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
+                        <input id="fullname" name="fullname" type="text" required
+                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Username</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3 text-slate-500">@</span>
+                            <input id="username" name="username" type="text" required
+                                class="w-full bg-slate-850 border border-slate-700/60 rounded-xl pl-8 pr-10 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                placeholder="johndoe">
+                            <span id="username-spinner" class="absolute right-3 top-3.5 hidden">
+                                <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                            <span id="username-check" class="absolute right-3 top-3 hidden">
+                                <i data-lucide="check" class="w-6 h-6 text-green-500"></i>
+                            </span>
+                            <span id="username-cross" class="absolute right-3 top-3 hidden">
+                                <i data-lucide="x" class="w-6 h-6 text-red-500"></i>
+                            </span>
+                        </div>
+                        <p id="username-helper" class="text-xs mt-1.5 text-slate-500">Usernames must be unique.</p>
+                    </div>
                 </div>
 
-                <form id="setup-form" class="space-y-6">
-                    <!-- Avatar -->
-                    <div class="flex flex-col items-center">
-                        <img id="avatar-preview" src="../src/assets/avatar.png" class="w-24 h-24 rounded-full object-cover mb-4" alt="Avatar preview">
-                        <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg, image/gif">
-                        <button type="button" id="change-photo-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-full hover:bg-slate-50">
-                            Change Photo
-                        </button>
-                    </div>
-
-                    <!-- Text Inputs -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="fullname" class="block text-sm font-medium text-slate-700">Full Name</label>
-                            <input id="fullname" name="fullname" type="text" required class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
+                <!-- Avatar Presets -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Choose Avatar</label>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div id="avatar-presets" class="flex gap-3">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=lazy" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=lazy">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=clown" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=clown">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=ghost" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=ghost">
                         </div>
-                        <div>
-                            <label for="username" class="block text-sm font-medium text-slate-700">Username</label>
-                            <input id="username" name="username" type="text" required pattern="^[a-zA-Z0-9_]{3,15}$" title="3-15 characters, letters, numbers, and underscores only." class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                        </div>
+                        <input id="avatar-url" name="avatar_url" type="url"
+                            class="flex-1 min-w-[200px] bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Or paste custom image URL...">
                     </div>
+                </div>
 
-                    <div>
-                        <label for="bio" class="block text-sm font-medium text-slate-700">Bio</label>
-                        <textarea id="bio" name="bio" rows="3" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></textarea>
-                    </div>
+                <!-- Funny Bio -->
+                <div>
+                    <label for="bio" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Funny Slacker Bio</label>
+                    <textarea id="bio" name="bio" required rows="2"
+                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
+                        placeholder="Thrilled to announce that I have completed another day of scrolling LinkedIn. 🤡"></textarea>
+                </div>
 
-                    <div>
-                        <label for="experience" class="block text-sm font-medium text-slate-700">Experience</label>
-                        <input id="experience" name="experience" type="text" placeholder="e.g., Chief Relaxation Officer at Home Inc." class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                    </div>
+                <!-- Unprofessional Experience -->
+                <div>
+                    <label for="experience" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Experience Summary</label>
+                    <textarea id="experience" name="experience" required rows="2"
+                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
+                        placeholder="Over 3 years of experience being ghosted by recruiters, collecting automated rejection letters, and pretending to work in standup calls."></textarea>
+                </div>
 
-                    <div>
-                        <label for="skills" class="block text-sm font-medium text-slate-700">Skills (comma-separated)</label>
-                        <input id="skills" name="skills" type="text" placeholder="e.g., Binge-Watching, Advanced Napping" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                    </div>
+                <!-- Slacker Skills -->
+                <div>
+                    <label for="skills" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Slacker Skills (comma separated)</label>
+                    <input id="skills" name="skills" type="text" required
+                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
+                        placeholder="Closing Zoom meeting early, Procrastination, Looking busy, Sleeping with eyes open">
+                </div>
 
-                    <div>
-                        <label for="dob" class="block text-sm font-medium text-slate-700">Date of Birth</label>
-                        <input id="dob" name="dob" type="date" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                    </div>
-
-                    <!-- Social Links -->
-                    <div class="space-y-4">
-                        <h3 class="text-sm font-medium text-slate-700">Social Links (Optional)</h3>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="instagram" class="w-5 h-5 text-slate-400"></i>
-                            <input id="instagram" name="instagram" type="text" placeholder="Instagram username" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="linkedin" class="w-5 h-5 text-slate-400"></i>
-                            <input id="linkedin" name="linkedin" type="text" placeholder="LinkedIn profile URL" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="facebook" class="w-5 h-5 text-slate-400"></i>
-                            <input id="facebook" name="facebook" type="text" placeholder="Facebook profile URL" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm">
-                        </div>
-                    </div>
-
-                    <!-- Error Message -->
-                    <div id="error-message" class="hidden text-sm text-red-600 bg-red-100 p-3 rounded-md text-center"></div>
-
-                    <div>
-                        <button type="submit" id="submit-btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600">
-                            Complete Setup
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn"
+                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg transition duration-200 transform hover:scale-[1.01] flex items-center justify-center gap-2">
+                    <span>Activate Account & Start Slackin'</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </form>
         </div>
     </div>
 
+    <!-- Firebase and Database integration -->
     <script type="module">
-        import { auth } from '../Data/firebase-client.js';
+        import { auth, db } from '../Data/firebase-client.js';
         import supabase, { setSupabaseToken } from '../Data/supabase-client.js';
-        import { uploadFile } from '../Data/auth-handler.js';
-        import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { setSupabaseSession } from '../Data/auth-handler.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        const setupForm = document.getElementById('setup-form');
-        const errorMessageDiv = document.getElementById('error-message');
-        const submitBtn = document.getElementById('submit-btn');
         let currentUser = null;
-        let newAvatarFile = null;
+        let usernameValid = false;
+        let checkTimeout;
 
-        // Check auth state
+        // Verify Authentication on Load
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                // When the user is authenticated with Firebase,
-                // get the JWT and set it for Supabase manually.
-                const token = await user.getIdToken();
-                setSupabaseToken(token);
-
-                // Check if the user already has a profile.
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('id', user.uid)
-                    .single();
-
-                if (profile) {
-                    // Profile exists, redirect them away from setup.
-                    window.location.href = '../profile.html';
-                } else {
-                    // Pre-fill name from Google/Firebase auth if available
-                    document.getElementById('fullname').value = user.displayName || '';
-                }
-            } else {
-                // Not logged in, redirect to login
+            if (!user) {
+                console.log("No authenticated user found, kicking back to login.");
                 window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+            await setSupabaseSession(user);
+
+            // Populate defaults from auth profile
+            const nameInput = document.getElementById('fullname');
+            if (user.displayName && !nameInput.value) {
+                nameInput.value = user.displayName;
+            }
+
+            const avatarInput = document.getElementById('avatar-url');
+            if (user.photoURL && !avatarInput.value) {
+                avatarInput.value = user.photoURL;
+                selectAvatarPreset(user.photoURL);
+            }
+
+            // Attempt to pre-fill from database if profile row already exists (incomplete)
+            try {
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.uid).maybeSingle();
+                if (profile) {
+                    if (profile.full_name) nameInput.value = profile.full_name;
+                    if (profile.username) {
+                        document.getElementById('username').value = profile.username;
+                        checkUsername(profile.username);
+                    }
+                    if (profile.avatar_url) {
+                        avatarInput.value = profile.avatar_url;
+                        selectAvatarPreset(profile.avatar_url);
+                    }
+                    if (profile.bio) document.getElementById('bio').value = profile.bio;
+                    if (profile.experience) document.getElementById('experience').value = profile.experience;
+                    if (profile.skills) document.getElementById('skills').value = Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills;
+                }
+            } catch (err) {
+                console.warn("Failed to load existing profile draft:", err);
             }
         });
 
-        // Avatar Upload Logic
-        document.getElementById('change-photo-btn').addEventListener('click', () => {
-            document.getElementById('avatar-file-input').click();
-        });
+        // Username Availability Validator
+        const usernameInput = document.getElementById('username');
+        const helperText = document.getElementById('username-helper');
+        const spinner = document.getElementById('username-spinner');
+        const checkIcon = document.getElementById('username-check');
+        const crossIcon = document.getElementById('username-cross');
 
-        document.getElementById('avatar-file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                newAvatarFile = file;
-                document.getElementById('avatar-preview').src = URL.createObjectURL(file);
+        async function checkUsername(val) {
+            val = val.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+            usernameInput.value = val;
+
+            if (val.length < 3) {
+                helperText.textContent = "Username must be at least 3 characters.";
+                helperText.className = "text-xs mt-1.5 text-red-400";
+                checkIcon.classList.add('hidden');
+                crossIcon.classList.remove('hidden');
+                usernameValid = false;
+                return;
             }
-        });
 
-        // Form Submission
-        setupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Saving...";
-
-            const formData = new FormData(setupForm);
-            const formProps = Object.fromEntries(formData);
+            spinner.classList.remove('hidden');
+            checkIcon.classList.add('hidden');
+            crossIcon.classList.add('hidden');
 
             try {
-                let avatarUrl = currentUser.photoURL || '../src/assets/avatar.png';
-                const newUsername = formProps.username.trim().toLowerCase();
+                // Query database for conflicting username
+                const { data } = await supabase.from('profiles')
+                    .select('id')
+                    .eq('username', val)
+                    .neq('id', currentUser.uid)
+                    .maybeSingle();
 
-                // 0. Check if username is unique before doing anything else
-                const { data: existingUser, error: checkError } = await supabase
-                    .from('profiles')
-                    .select('username')
-                    .eq('username', newUsername) // Check against the lowercase version
-                    .single();
-
-                if (existingUser) {
-                    throw new Error('That username is already taken. Please choose another.');
+                spinner.classList.add('hidden');
+                if (data) {
+                    helperText.textContent = `Username @${val} is already taken!`;
+                    helperText.className = "text-xs mt-1.5 text-red-400";
+                    crossIcon.classList.remove('hidden');
+                    usernameValid = false;
+                } else {
+                    helperText.textContent = `Username @${val} is available!`;
+                    helperText.className = "text-xs mt-1.5 text-green-400";
+                    checkIcon.classList.remove('hidden');
+                    usernameValid = true;
                 }
-                if (checkError && checkError.code !== 'PGRST116') throw checkError; // PGRST116 means no rows found, which is good.
+            } catch (err) {
+                spinner.classList.add('hidden');
+                console.error("Error checking username:", err);
+            }
+        }
 
-                // 1. Upload avatar if a new one was selected
-                if (newAvatarFile) {
-                    const filePath = `avatars/${currentUser.uid}/${newAvatarFile.name}`;
-                    avatarUrl = await uploadFile('media', filePath, newAvatarFile);
+        usernameInput.addEventListener('input', (e) => {
+            clearTimeout(checkTimeout);
+            const val = e.target.value;
+            if (!val) {
+                helperText.textContent = "Usernames must be unique.";
+                helperText.className = "text-xs mt-1.5 text-slate-500";
+                checkIcon.classList.add('hidden');
+                crossIcon.classList.add('hidden');
+                usernameValid = false;
+                return;
+            }
+            checkTimeout = setTimeout(() => checkUsername(val), 400);
+        });
+
+        // Preset avatar selection logic
+        const presetContainer = document.getElementById('avatar-presets');
+        const customAvatarInput = document.getElementById('avatar-url');
+
+        presetContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG') {
+                const url = e.target.getAttribute('data-avatar');
+                customAvatarInput.value = url;
+                selectAvatarPreset(url);
+            }
+        });
+
+        function selectAvatarPreset(url) {
+            Array.from(presetContainer.children).forEach(img => {
+                if (img.getAttribute('data-avatar') === url) {
+                    img.classList.replace('border-slate-700', 'border-blue-500');
+                } else {
+                    img.classList.replace('border-blue-500', 'border-slate-700');
                 }
+            });
+        }
 
-                // 2. Update Firebase Auth profile (name and photo)
-                await updateProfile(currentUser, {
-                    displayName: formProps.fullname.trim(),
-                    photoURL: avatarUrl
-                });
+        customAvatarInput.addEventListener('input', (e) => {
+            selectAvatarPreset(e.target.value);
+        });
 
-                // 3. Prepare data for Supabase
-                const socialLinks = {
-                    instagram: formProps.instagram,
-                    linkedin: formProps.linkedin,
-                    facebook: formProps.facebook,
-                };
+        // Form Submit Handler
+        const form = document.getElementById('setup-form');
+        const errorMessage = document.getElementById('error-message');
 
-                const profileData = {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.classList.add('hidden');
+
+            if (!currentUser) return;
+            if (!usernameValid) {
+                errorMessage.textContent = "Please select a valid, unique username first.";
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Saving configuration...</span><svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+            const fullname = form.fullname.value.trim();
+            const username = form.username.value.trim().toLowerCase();
+            const avatar = form.avatar_url.value.trim() || 'https://api.dicebear.com/7.x/bottts/svg?seed=lazy';
+            const bio = form.bio.value.trim();
+            const experience = form.experience.value.trim();
+            
+            // Format skills as clean trimmed array
+            const skills = form.skills.value.split(',').map(s => s.trim()).filter(Boolean);
+
+            try {
+                // 1. Save Profile in Supabase using upsert
+                const supabasePayload = {
                     id: currentUser.uid,
-                    full_name: formProps.fullname.trim(),
-                    username: newUsername,
-                    bio: formProps.bio,
-                    experience: formProps.experience,
-                    skills: formProps.skills.split(',').map(s => s.trim()).filter(Boolean),
-                    dob: formProps.dob || null,
-                    avatar_url: avatarUrl,
-                    social_links: socialLinks,
+                    full_name: fullname,
+                    username: username,
+                    avatar_url: avatar,
+                    email: currentUser.email,
+                    bio: bio,
+                    experience: experience,
+                    skills: skills,
                     updated_at: new Date().toISOString()
                 };
 
-                // 4. Upsert profile data in Supabase
-                const { error } = await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
-                if (error) throw error;
+                const { error: supabaseError } = await supabase
+                    .from('profiles')
+                    .upsert(supabasePayload, { onConflict: 'id' });
 
-                // 5. Redirect to profile page
-                window.location.href = '../profile.html';
+                if (supabaseError) throw supabaseError;
 
-            } catch (error) {
-                console.error("Setup Error:", error);
-                errorMessageDiv.textContent = `Error: ${error.message}`;
-                errorMessageDiv.classList.remove('hidden');
-            } finally {
+                // 2. Save User Document in Firestore
+                const firestorePayload = {
+                    displayName: fullname,
+                    username: username,
+                    photoURL: avatar,
+                    email: currentUser.email,
+                    bio: bio,
+                    experience: experience,
+                    skills: skills,
+                    createdAt: new Date().toISOString()
+                };
+
+                await setDoc(doc(db, "users", currentUser.uid), firestorePayload, { merge: true });
+
+                // 3. Mark in localStorage that user onboarding tour should trigger
+                localStorage.setItem('nw_just_onboarded', 'true');
+
+                // 4. Redirect to Main Feed
+                window.location.href = '../feed.html';
+
+            } catch (err) {
+                console.error("Profile Setup Error:", err);
                 submitBtn.disabled = false;
-                submitBtn.textContent = "Complete Setup";
+                submitBtn.innerHTML = `<span>Activate Account & Start Slackin'</span><i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+                lucide.createIcons();
+                errorMessage.textContent = `Error completing profile: ${err.message || err}`;
+                errorMessage.classList.remove('hidden');
             }
         });
 

@@ -102,6 +102,8 @@ Format:
 - [date] Project uses pnpm, not npm — always check package manager first.
 - [date] Auth routes require .env.local, not .env — check both before
   assuming missing config.
+- [2026-07-03] Supabase Realtime Broadcast callbacks receive the entire envelope `{ event, type, payload }`. Access properties via `envelope.payload` to prevent undefined values in WebRTC/ICE signaling.
+- [2026-07-03] Implement absolute completeness checks (username, full_name, bio, skills, experience) on all page loads to prevent "ghost users" (signed in to Firebase but missing a profile in Supabase) from accessing write-restricted features.
 ```
 
 ---

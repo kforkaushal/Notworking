@@ -160,9 +160,28 @@
                 const token = await user.getIdToken();
                 setSupabaseToken(token);
 
-                document.getElementById('nav-profile-img').src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                // Verify profile completeness
+                let profile = null;
+                try {
+                    const { data } = await supabase.from('profiles')
+                        .select('username, full_name, avatar_url, bio, experience, skills')
+                        .eq('id', user.uid)
+                        .maybeSingle();
+                    profile = data;
+                } catch (e) {
+                    console.error("Error checking profile in notifications.html:", e);
+                }
+
+                if (!profile || !profile.username || !profile.full_name || !profile.bio || !profile.experience || !profile.skills) {
+                    console.log("Profile incomplete or missing. Redirecting to setup.html...");
+                    window.location.href = 'Auth/setup.html';
+                    return;
+                }
+
+                const photo = profile.avatar_url || 'src/assets/avatar-placeholder.png';
+                document.getElementById('nav-profile-img').src = photo;
                 const mobileImg = document.getElementById('mobile-nav-profile-img');
-                if (mobileImg) mobileImg.src = user.photoURL || 'src/assets/avatar-placeholder.png';
+                if (mobileImg) mobileImg.src = photo;
 
                 await fetchNotifications();
 

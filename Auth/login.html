@@ -152,13 +152,22 @@
             if (isAuthInProgress) return; // Don't interrupt active auth flow
 
             if (user) {
-                console.log('User already logged in. Verifying Supabase session before redirect...');
+                console.log('User already logged in. Verifying Supabase session and profile completeness before redirect...');
                 try {
                     await setSupabaseSession(user);
-                    // Use relative path consistent with other pages
-                    window.location.href = '../feed.html';
+                    const { data: profile } = await supabase.from('profiles')
+                        .select('username, full_name, bio, experience, skills')
+                        .eq('id', user.uid)
+                        .maybeSingle();
+
+                    if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                        window.location.href = '../feed.html';
+                    } else {
+                        window.location.href = 'setup.html';
+                    }
                 } catch (error) {
-                    console.error("Failed to set Supabase session on login page, user will stay here.", error);
+                    console.error("Failed to verify profile completeness, signing out user.", error);
+                    await auth.signOut();
                 }
             }
         });
@@ -177,16 +186,24 @@
             const rememberMe = document.getElementById('remember-me').checked;
 
             try {
-                await handleEmailPasswordLogin(email, password, rememberMe);
-                // Redirect manually after successful login
-                window.location.href = '../feed.html';
+                const user = await handleEmailPasswordLogin(email, password, rememberMe);
+                const { data: profile } = await supabase.from('profiles')
+                    .select('username, full_name, bio, experience, skills')
+                    .eq('id', user.uid)
+                    .maybeSingle();
+
+                if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                    window.location.href = '../feed.html';
+                } else {
+                    window.location.href = 'setup.html';
+                }
             } catch (error) {
                 isAuthInProgress = false; // Reset flag on error
-                const errorMessage = "Invalid email or password. Please try again.";
-                console.error('Login Error:', error.code, error.message);
+                console.error('Login Error:', error);
+                await auth.signOut();
                 errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
                 errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
-                displayError(errorMessageDiv, errorMessage);
+                displayError(errorMessageDiv, "Invalid email, password, or incomplete profile configuration. Please try again.");
             }
         });
 
@@ -194,14 +211,19 @@
         googleSignInBtn.addEventListener('click', async () => {
             isAuthInProgress = true;
             try {
-                await handleGoogleAuth();
-                window.location.href = '../feed.html';
+                const { user, isNewUser } = await handleGoogleAuth();
+                if (isNewUser) {
+                    window.location.href = 'setup.html';
+                } else {
+                    window.location.href = '../feed.html';
+                }
             } catch (error) {
                 isAuthInProgress = false;
                 console.error('Google Sign-In Error:', error);
+                await auth.signOut();
                 errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
                 errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
-                displayError(errorMessageDiv, `Error: ${error.message}`);
+                displayError(errorMessageDiv, `Google Auth Failed: ${error.message}`);
             }
         });
 

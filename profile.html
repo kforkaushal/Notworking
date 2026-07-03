@@ -650,66 +650,39 @@
                 currentUser = user;
                 if (user) {
                     await setSupabaseToken(await user.getIdToken());
-                    const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
+
+                    // Query complete profile details
+                    let profile = null;
+                    try {
+                        const { data } = await supabase.from('profiles')
+                            .select('id, username, full_name, bio, experience, skills, avatar_url')
+                            .eq('id', user.uid)
+                            .maybeSingle();
+                        profile = data;
+                    } catch (e) {
+                        console.error("Error fetching profile in profile.html:", e);
+                    }
+
+                    // Kick back to setup if profile is missing/incomplete
+                    if (!profile || !profile.username || !profile.full_name || !profile.bio || !profile.experience || !profile.skills) {
+                        console.log("Profile incomplete or missing. Redirecting to setup.html...");
+                        window.location.href = 'Auth/setup.html';
+                        return;
+                    }
+
+                    const photo = profile.avatar_url || 'src/assets/avatar-placeholder.png';
                     const navProfileImg = document.getElementById('nav-profile-img');
                     navProfileImg.src = photo;
                     // Update bottom nav profile image
                     const mobileNavImg = document.getElementById('mobile-nav-profile-img');
                     if (mobileNavImg) mobileNavImg.src = photo;
 
-                    // --- OPTIMIZATION: Check LocalStorage First ---
-                    let cachedUsername = localStorage.getItem('nw_username');
-                    let userProfile = cachedUsername ? { username: cachedUsername } : null;
+                    // Cache the username
+                    localStorage.setItem('nw_username', profile.username);
 
-                    if (!userProfile) {
-                        // Fetch the current user's profile ONLY if not cached
-                        const { data } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
-                        userProfile = data;
-
-                        // --- BACKFILL USERNAME FOR OLD USERS ---
-                        if (!userProfile || !userProfile.username) {
-                            console.log("Backfilling missing username...");
-                            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                            const newUsername = `user_${randomSuffix}`;
-
-                            // Update Supabase
-                            const { error: sbError } = await supabase.from('profiles').upsert({
-                                id: user.uid,
-                                username: newUsername,
-                                full_name: user.displayName || 'Anonymous',
-                                email: user.email,
-                                updated_at: new Date().toISOString()
-                            }, { onConflict: 'id' });
-
-                            if (!sbError) {
-                                // Update Firestore
-                                const userRef = doc(db, "users", user.uid);
-                                try {
-                                    await updateDoc(userRef, { username: newUsername });
-                                } catch (e) {
-                                    // Doc might not exist, set it
-                                    await setDoc(userRef, {
-                                        username: newUsername,
-                                        email: user.email,
-                                        displayName: user.displayName,
-                                        createdAt: new Date()
-                                    }, { merge: true });
-                                }
-                                userProfile = { username: newUsername };
-                            }
-                        }
-
-                        // Cache the username
-                        if (userProfile && userProfile.username) {
-                            localStorage.setItem('nw_username', userProfile.username);
-                        }
-                    }
-
-                    // --- REDIRECT LOGIC REMOVED ---
-                    // Reverted to simple query params for reliability
-                    if (userProfile && userProfile.username) {
-                        // Update Nav Link
-                        navProfileImg.parentElement.href = `profile.html?username=${userProfile.username}`;
+                    // Update Nav Link
+                    if (profile.username) {
+                        navProfileImg.parentElement.href = `profile.html?username=${profile.username}`;
                     } else {
                         navProfileImg.parentElement.href = 'profile.html';
                     }

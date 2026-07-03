@@ -145,13 +145,26 @@
         let isAuthInProgress = false;
 
         // --- REDIRECT IF ALREADY LOGGED IN ---
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (isAuthInProgress) return; // Don't interrupt active auth flow
 
             if (user) {
-                // User is signed in, redirect to feed.
-                console.log('User already logged in. Redirecting to feed...');
-                window.location.href = '../feed.html'; // CHANGED: Redirect to feed, not setup.html
+                console.log('User already logged in. Verifying Supabase session before redirect...');
+                try {
+                    const { data: profile } = await supabase.from('profiles')
+                        .select('username, full_name, bio, experience, skills')
+                        .eq('id', user.uid)
+                        .maybeSingle();
+
+                    if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                        window.location.href = '../feed.html';
+                    } else {
+                        window.location.href = 'setup.html';
+                    }
+                } catch (error) {
+                    console.error("Failed to verify profile completeness, signing out user.", error);
+                    await auth.signOut();
+                }
             }
         });
 
@@ -170,11 +183,12 @@
 
             try {
                 await handleEmailPasswordSignUp(fullname, email, password, username);
-                window.location.href = '../feed.html';
+                window.location.href = 'setup.html';
             } catch (error) {
                 isAuthInProgress = false;
-                console.error('Signup Error:', error.code, error.message);
-                displayError(errorMessageDiv, `Error: ${error.message}`);
+                console.error('Signup Error:', error);
+                await auth.signOut();
+                displayError(errorMessageDiv, `Registration Failed: ${error.message}`);
             }
         });
 
@@ -184,12 +198,17 @@
         googleSignUpBtn.addEventListener('click', async () => {
             isAuthInProgress = true;
             try {
-                await handleGoogleAuth();
-                window.location.href = '../feed.html';
+                const { user, isNewUser } = await handleGoogleAuth();
+                if (isNewUser) {
+                    window.location.href = 'setup.html';
+                } else {
+                    window.location.href = '../feed.html';
+                }
             } catch (error) {
                 isAuthInProgress = false;
                 console.error('Google Sign-In Error:', error);
-                displayError(errorMessageDiv, `Error: ${error.message}`);
+                await auth.signOut();
+                displayError(errorMessageDiv, `Google Sign-Up Failed: ${error.message}`);
             }
         });
     </script>
