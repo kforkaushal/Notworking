@@ -546,7 +546,7 @@
 
                 // --- OPTIMIZATION: Optimistic UI Update ---
                 const newPost = {
-                    id: data?.[0]?.id || Date.now(), // Fallback ID if not returned immediately
+                    id: String(data?.[0]?.id || Date.now()), // Ensure ID is a string
                     user_id: currentUser.uid,
                     content: content,
                     media_url: mediaUrl,
@@ -563,7 +563,7 @@
                     is_saved_by_user: false
                 };
 
-                const container = document.getElementById("feed-posts-container");
+                const container = document.getElementById('feed-posts-container');
                 const newPostEl = createPostElement(newPost, currentUser);
 
                 // Remove "No posts yet" message if present
@@ -572,7 +572,7 @@
                 }
 
                 container.prepend(newPostEl);
-                lucide.createIcons({ nodes: [newPostEl] });
+                lucide.createIcons({ nodes: [newPostEl] }); // Render icons for the new post
                 showGlobalToast("Posted successfully!", "success");
 
             } catch (err) {
