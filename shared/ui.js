@@ -758,8 +758,8 @@ export async function handlePostAction(supabase, currentUser, e, inFlightLikes =
 
 // ─── Client-side Image Compression Utility ──────────────────────────────────────
 export async function compressImageToWebP(file, options = {}) {
-    const COMPRESS_MAX_DIMENSION = 1920;
-    const COMPRESS_QUALITY = 0.82;
+    const COMPRESS_MAX_DIMENSION = options.maxDimension || 1920;
+    const COMPRESS_QUALITY = options.quality || 0.82;
     const COMPRESS_MIN_QUALITY = 0.5;
 
     // Safety checks: skip GIFs and non-images

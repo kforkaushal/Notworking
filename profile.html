@@ -467,7 +467,7 @@
                 saveBtn.textContent = "Compressing...";
 
                 try {
-                    const compressed = await compressImageToWebP(file);
+                    const compressed = await compressImageToWebP(file, { maxDimension: 400 });
                     if (compressed && compressed.size < file.size) {
                         newAvatarFile = compressed;
                         avatarPreview.src = URL.createObjectURL(compressed);
