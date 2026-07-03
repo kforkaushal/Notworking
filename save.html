@@ -101,7 +101,7 @@
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onIdTokenChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { createPostElement, showToast } from './shared/ui.js';
+        import { createPostElement, showToast, showAuthGateModal, closeAllPostMenus } from './shared/ui.js';
 
         let currentUser = null;
         // Prevents double-click race conditions on like/unlike (flowchart fix #4)
@@ -144,20 +144,24 @@
 
                 if (postsError) throw postsError;
 
-                // 3. Fetch the current user's like states for these posts
+                // 3. Fetch the current user's like states and follow states for these posts
                 let likeStates = {};
+                let followStates = {};
                 if (posts && posts.length > 0) {
-                    const { data: likedData, error: likesError } = await supabase
-                        .from('likes')
-                        .select('post_id')
-                        .eq('user_id', currentUser.uid)
-                        .in('post_id', postIds);
+                    const authorIds = [...new Set(posts.map(p => p.user_id))];
+                    const [likedRes, followRes] = await Promise.all([
+                        supabase.from('likes').select('post_id').eq('user_id', currentUser.uid).in('post_id', postIds),
+                        supabase.from('followers').select('following_id').eq('follower_id', currentUser.uid).in('following_id', authorIds)
+                    ]);
                     
-                    if (likesError) {
-                        console.warn('save page likes query failed:', likesError.message);
+                    if (likedRes.error) console.warn('save page likes query failed:', likedRes.error.message);
+                    if (followRes.error) console.warn('save page follow query failed:', followRes.error.message);
+                    
+                    if (likedRes.data) {
+                        likeStates = likedRes.data.reduce((acc, l) => ({ ...acc, [String(l.post_id)]: true }), {});
                     }
-                    if (likedData) {
-                        likeStates = likedData.reduce((acc, l) => ({ ...acc, [String(l.post_id)]: true }), {});
+                    if (followRes.data) {
+                        followStates = followRes.data.reduce((acc, f) => ({ ...acc, [String(f.following_id)]: true }), {});
                     }
                 }
 
@@ -169,7 +173,8 @@
                         const enriched = {
                             ...post,
                             is_liked_by_user: !!likeStates[String(post.id)],
-                            is_saved_by_user: true // All posts here are saved by definition
+                            is_saved_by_user: true, // All posts here are saved by definition
+                            is_following_author: !!followStates[String(post.user_id)]
                         };
                         const el = createPostElement(enriched, currentUser);
                         container.appendChild(el);
@@ -259,108 +264,268 @@
         // --- POST ACTIONS ---
         async function handlePostAction(e) {
             const btn = e.target.closest('button');
-            if (!btn || !currentUser) return;
+            if (!btn) return;
+
+            // Auth Gate Interceptor
+            if (btn.dataset.requiresAuth === 'true' && !currentUser) {
+                e.stopPropagation();
+                showAuthGateModal();
+                return;
+            }
 
             const postId = btn.dataset.postId;
 
-            // LIKE (flowchart fixes: double-click guard + self-like notification guard)
+            // 1. THREE-DOT MENU TOGGLE
+            if (btn.classList.contains('three-dot-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const menu = card.querySelector('.post-dropdown-menu');
+                const isVisible = menu.style.display === 'block';
+                closeAllPostMenus();
+                if (!isVisible) {
+                    menu.style.display = 'block';
+                }
+                return;
+            }
+
+            // 2. SHARE MENU TOGGLE
+            if (btn.classList.contains('share-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const menu = card.querySelector('.share-submenu');
+                const isVisible = menu.style.display === 'block';
+                closeAllPostMenus();
+                if (!isVisible) {
+                    menu.style.display = 'block';
+                }
+                return;
+            }
+
+            // 3. COPY LINK / INSTAGRAM COPY
+            if (btn.classList.contains('copy-link-btn') || btn.classList.contains('copy-link-share-btn') || btn.classList.contains('share-instagram-btn')) {
+                const url = btn.dataset.postUrl;
+                try {
+                    await navigator.clipboard.writeText(url);
+                    if (btn.classList.contains('share-instagram-btn')) {
+                        showToast("Link copied! Paste it in your Instagram story or message.", "success");
+                    } else {
+                        showToast("Link copied to clipboard!", "success");
+                    }
+                } catch (err) {
+                    console.error("Clipboard copy error:", err);
+                    showToast("Failed to copy link.", "error");
+                }
+                closeAllPostMenus();
+                return;
+            }
+
+            // 4. NATIVE SHARE
+            if (btn.classList.contains('native-share-btn')) {
+                const url = btn.dataset.postUrl;
+                const title = btn.dataset.postTitle;
+                if (navigator.share) {
+                    navigator.share({ title, url }).catch(err => console.warn("Native share cancelled:", err));
+                }
+                closeAllPostMenus();
+                return;
+            }
+
+            // 5. ABOUT POST TOGGLE
+            if (btn.classList.contains('about-post-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const panel = card.querySelector('.about-post-panel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+
+            // 6. FOLLOW/UNFOLLOW FROM MENU
+            if (btn.classList.contains('follow-from-menu-btn')) {
+                closeAllPostMenus();
+                const authorId = btn.dataset.authorId;
+                const authorUsername = btn.dataset.authorUsername;
+                const labelSpan = btn.querySelector('.follow-menu-label');
+                const isFollowing = labelSpan.textContent.includes('Unfollow');
+
+                if (isFollowing) {
+                    labelSpan.textContent = `Follow @${authorUsername}`;
+                    try {
+                        const { error } = await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', authorId);
+                        if (error) throw error;
+                        showToast(`Unfollowed @${authorUsername}`, "info");
+                    } catch (err) {
+                        labelSpan.textContent = `Unfollow @${authorUsername}`;
+                        showToast("Failed to unfollow. Please try again.", "error");
+                        console.error(err);
+                    }
+                } else {
+                    labelSpan.textContent = `Unfollow @${authorUsername}`;
+                    try {
+                        const { error } = await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: authorId });
+                        if (error) throw error;
+                        createNotification('follow', null, authorId);
+                        showToast(`Following @${authorUsername}`, "success");
+                    } catch (err) {
+                        labelSpan.textContent = `Follow @${authorUsername}`;
+                        showToast("Failed to follow. Please try again.", "error");
+                        console.error(err);
+                    }
+                }
+                return;
+            }
+
+            // 7. SAVE/UNSAVE FROM MENU
+            if (btn.classList.contains('save-from-menu-btn')) {
+                closeAllPostMenus();
+                const isSaved = btn.dataset.isSaved === '1';
+                const labelSpan = btn.querySelector('.save-menu-label');
+                const svg = btn.querySelector('svg');
+
+                if (isSaved) {
+                    btn.dataset.isSaved = '0';
+                    labelSpan.textContent = 'Save post';
+                    btn.classList.remove('text-green-600');
+                    btn.classList.add('text-slate-700');
+                    if (svg) {
+                        svg.setAttribute('fill', 'none');
+                        svg.classList.remove('text-green-500');
+                        svg.classList.add('text-slate-500');
+                    }
+                    try {
+                        const { error } = await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+                        if (error) throw error;
+                        
+                        // Remove from saved page container immediately
+                        const card = btn.closest('.post-card');
+                        if (card) {
+                            card.remove();
+                            const savedContainer = document.getElementById('saved-posts-container');
+                            if (savedContainer && savedContainer.querySelectorAll('.post-card').length === 0) {
+                                savedContainer.innerHTML = `
+                                <div class="text-center py-10 text-slate-500 border border-dashed border-slate-300 rounded-lg max-w-lg mx-auto">
+                                    <i data-lucide="bookmark-x" class="w-10 h-10 mx-auto mb-2 text-slate-400"></i>
+                                    You haven't saved any posts yet.
+                                </div>`;
+                                lucide.createIcons();
+                            }
+                        }
+                    } catch (err) {
+                        btn.dataset.isSaved = '1';
+                        labelSpan.textContent = 'Unsave post';
+                        btn.classList.add('text-green-600');
+                        btn.classList.remove('text-slate-700');
+                        if (svg) {
+                            svg.setAttribute('fill', 'currentColor');
+                            svg.classList.add('text-green-500');
+                            svg.classList.remove('text-slate-500');
+                        }
+                        showToast("Failed to unsave post.", "error");
+                    }
+                } else {
+                    btn.dataset.isSaved = '1';
+                    labelSpan.textContent = 'Unsave post';
+                    btn.classList.add('text-green-600');
+                    btn.classList.remove('text-slate-700');
+                    if (svg) {
+                        svg.setAttribute('fill', 'currentColor');
+                        svg.classList.add('text-green-500');
+                        svg.classList.remove('text-slate-500');
+                    }
+                    try {
+                        const { error } = await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
+                        if (error) throw error;
+                    } catch (err) {
+                        btn.dataset.isSaved = '0';
+                        labelSpan.textContent = 'Save post';
+                        btn.classList.remove('text-green-600');
+                        btn.classList.add('text-slate-700');
+                        if (svg) {
+                            svg.setAttribute('fill', 'none');
+                            svg.classList.remove('text-green-500');
+                            svg.classList.add('text-slate-500');
+                        }
+                        showToast("Failed to save post.", "error");
+                    }
+                }
+                return;
+            }
+
+            // 8. DELETE FROM MENU
+            if (btn.classList.contains('delete-from-menu-btn')) {
+                closeAllPostMenus();
+                if (confirm("Delete this post?")) {
+                    const { error } = await supabase.from('posts').delete().eq('id', postId);
+                    if (!error) {
+                        btn.closest('.post-card').remove();
+                        showToast("Post deleted successfully", "success");
+                    } else {
+                        showToast("Error deleting post: " + error.message, "error");
+                    }
+                }
+                return;
+            }
+
+            // 9. LIKE
             if (btn.classList.contains('like-btn')) {
                 if (inFlightLikes.has(postId)) return;
                 inFlightLikes.add(postId);
 
                 const countSpan = btn.querySelector('span');
-                const icon = btn.querySelector('svg') || btn.querySelector('i');
+                const icon = btn.querySelector('svg');
                 const isLiked = btn.classList.contains('text-red-500');
 
                 if (isLiked) {
-                    btn.classList.remove('text-red-500');
-                    if (icon) icon.classList.remove('fill-current');
+                    btn.classList.remove('text-red-500', 'bg-red-50');
+                    btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                    if (icon) icon.setAttribute('fill', 'none');
                     countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
                     try {
                         const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
                         if (error) throw error;
                     } catch (err) {
-                        btn.classList.add('text-red-500');
-                        if (icon) icon.classList.add('fill-current');
+                        btn.classList.add('text-red-500', 'bg-red-50');
+                        btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                        if (icon) icon.setAttribute('fill', 'currentColor');
                         countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                        showToast("Failed to unlike post. Please check your connection.", "error");
+                        showToast("Failed to unlike post.", "error");
                         console.error("Unlike DB error in save.html:", err);
                     }
                 } else {
-                    btn.classList.add('text-red-500');
-                    if (icon) icon.classList.add('fill-current');
+                    btn.classList.add('text-red-500', 'bg-red-50');
+                    btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                    if (icon) icon.setAttribute('fill', 'currentColor');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
                     try {
                         const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
                         if (error) throw error;
-                        // Only notify if liker is NOT the post author (self-like guard)
                         const postCard = btn.closest('.post-card');
                         if (postCard && postCard.dataset.authorId && postCard.dataset.authorId !== currentUser.uid) {
                             createNotification('like', postId, postCard.dataset.authorId);
                         }
                     } catch (err) {
-                        btn.classList.remove('text-red-500');
-                        if (icon) icon.classList.remove('fill-current');
+                        btn.classList.remove('text-red-500', 'bg-red-50');
+                        btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                        if (icon) icon.setAttribute('fill', 'none');
                         countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                        showToast("Failed to like post. Please check your connection.", "error");
+                        showToast("Failed to like post.", "error");
                         console.error("Like DB error in save.html:", err);
                     }
                 }
                 inFlightLikes.delete(postId);
             }
 
-            // COMMENTS TOGGLE
+            // 10. COMMENT TOGGLE
             if (btn.classList.contains('comment-btn')) {
                 const card = btn.closest('.post-card');
                 const section = card.querySelector('.comment-section');
-                section.classList.toggle('hidden');
-                if (!section.classList.contains('hidden')) {
+                const isHidden = section.style.display === 'none';
+                section.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
                     loadComments(postId, section.querySelector('.comments-list'));
                 }
             }
 
-            // DELETE
-            if (btn.classList.contains('delete-btn')) {
-                if (confirm("Delete this post?")) {
-                    const { error } = await supabase.from('posts').delete().eq('id', postId);
-                    if (!error) btn.closest('.post-card').remove();
-                }
-            }
-
-            // SAVE / UNSAVE
-            if (btn.classList.contains('save-btn')) {
-                const icon = btn.querySelector('svg');
-                const span = btn.querySelector('span');
-                const isSaved = btn.classList.contains('text-green-500');
-
-                if (isSaved) {
-                    btn.classList.remove('text-green-500');
-                    if (icon) icon.classList.remove('fill-current');
-                    if (span) span.textContent = 'Save';
-                    await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
-                    
-                    // On Saved page, remove post immediately
-                    const card = btn.closest('.post-card');
-                    if (card) {
-                        card.remove();
-                        const savedContainer = document.getElementById('saved-posts-container');
-                        if (savedContainer && savedContainer.children.length === 0) {
-                            savedContainer.innerHTML = `
-                            <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center max-w-lg mx-auto">
-                                <p class="text-slate-500">You haven't saved any posts yet.</p>
-                                <a href="feed.html" class="text-brand-blue font-bold mt-2 inline-block hover:underline">Explore the Feed</a>
-                            </div>`;
-                        }
-                    }
-                } else {
-                    btn.classList.add('text-green-500');
-                    if (icon) icon.classList.add('fill-current');
-                    if (span) span.textContent = 'Saved';
-                    await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
-                }
-            }
-
-            // DELETE COMMENT
+            // 11. DELETE COMMENT
             if (btn.classList.contains('delete-comment-btn')) {
                 const commentId = btn.dataset.commentId;
                 if (confirm("Delete this comment?")) {
@@ -448,6 +613,11 @@
             });
             lucide.createIcons({ nodes: [container] });
         }
+
+        // Close menus when clicking outside
+        document.addEventListener('click', () => {
+            closeAllPostMenus();
+        });
 
         lucide.createIcons();
     </script>

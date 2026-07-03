@@ -112,6 +112,8 @@
                     <span class="text-xs font-bold hidden sm:block">Notifications</span>
                 </a>
                 <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                <!-- Guest Login Button -->
+                <a href="Auth/login.html" id="nav-login-btn" class="hidden bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-full hover:bg-black transition">Log In</a>
                 <!-- Profile Link/Dropdown -->
                 <a href="profile.html" id="nav-profile-link" class="hidden">
                     <img id="nav-profile-img-mobile" src="src/assets/avatar-placeholder.png"
@@ -242,6 +244,16 @@
 
         <!-- FEED -->
         <main class="col-span-1 lg:col-span-2 space-y-6">
+            <!-- Guest Join Banner -->
+            <div id="guest-join-banner" class="hidden bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-2xl shadow border border-slate-200 text-white text-center mb-6">
+                <h2 class="text-xl font-extrabold mb-2">Welcome to NotWorking!</h2>
+                <p class="text-sm opacity-90 mb-4">Share your stories of laziness, job rejections, and zero productivity. Join now to post, comment, like, and follow fellow slackers.</p>
+                <div class="flex justify-center gap-3">
+                    <a href="Auth/login.html" class="bg-white text-blue-600 font-bold px-5 py-2.5 rounded-full hover:bg-slate-50 transition text-sm">Log In</a>
+                    <a href="Auth/signup.html" class="bg-red-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-red-600 transition text-sm">Sign Up</a>
+                </div>
+            </div>
+
             <!-- Create Post Box -->
             <div id="post-content" class="bg-white p-5 rounded-2xl shadow mb-6 border border-slate-200 scroll-mt-20">
                 <div class="flex items-start gap-4 mb-4">
@@ -457,7 +469,7 @@
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { doc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-        import { createPostElement, createPostSkeleton, showToast as showGlobalToast } from './shared/ui.js';
+        import { createPostElement, createPostSkeleton, showToast as showGlobalToast, showAuthGateModal, closeAllPostMenus } from './shared/ui.js';
 
         let currentPage = 0;
         const POSTS_PER_PAGE = 5;
@@ -472,6 +484,8 @@
         // Group Logic
         const urlParams = new URLSearchParams(window.location.search);
         const currentGroupId = urlParams.get('group_id');
+        const targetPostId = urlParams.get('post');
+        const renderedPostIds = new Set();
 
         // Fetch Group Details if in group mode
         if (currentGroupId) {
@@ -625,106 +639,261 @@
         // --- POST ACTIONS ---
         async function handlePostAction(e) {
             const btn = e.target.closest('button');
-            if (!btn || !currentUser) return;
+            if (!btn) return;
+
+            // Auth Gate Interceptor
+            if (btn.dataset.requiresAuth === 'true' && !currentUser) {
+                e.stopPropagation();
+                showAuthGateModal();
+                return;
+            }
 
             const postId = btn.dataset.postId;
 
-            // LIKE (flowchart fixes: double-click guard + self-like notification guard)
+            // 1. THREE-DOT MENU TOGGLE
+            if (btn.classList.contains('three-dot-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const menu = card.querySelector('.post-dropdown-menu');
+                const isVisible = menu.style.display === 'block';
+                closeAllPostMenus();
+                if (!isVisible) {
+                    menu.style.display = 'block';
+                }
+                return;
+            }
+
+            // 2. SHARE MENU TOGGLE
+            if (btn.classList.contains('share-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const menu = card.querySelector('.share-submenu');
+                const isVisible = menu.style.display === 'block';
+                closeAllPostMenus();
+                if (!isVisible) {
+                    menu.style.display = 'block';
+                }
+                return;
+            }
+
+            // 3. COPY LINK / INSTAGRAM COPY
+            if (btn.classList.contains('copy-link-btn') || btn.classList.contains('copy-link-share-btn') || btn.classList.contains('share-instagram-btn')) {
+                const url = btn.dataset.postUrl;
+                try {
+                    await navigator.clipboard.writeText(url);
+                    if (btn.classList.contains('share-instagram-btn')) {
+                        showGlobalToast("Link copied! Paste it in your Instagram story or message.", "success");
+                    } else {
+                        showGlobalToast("Link copied to clipboard!", "success");
+                    }
+                } catch (err) {
+                    console.error("Clipboard copy error:", err);
+                    showGlobalToast("Failed to copy link.", "error");
+                }
+                closeAllPostMenus();
+                return;
+            }
+
+            // 4. NATIVE SHARE
+            if (btn.classList.contains('native-share-btn')) {
+                const url = btn.dataset.postUrl;
+                const title = btn.dataset.postTitle;
+                if (navigator.share) {
+                    navigator.share({ title, url }).catch(err => console.warn("Native share cancelled:", err));
+                }
+                closeAllPostMenus();
+                return;
+            }
+
+            // 5. ABOUT POST TOGGLE
+            if (btn.classList.contains('about-post-btn')) {
+                e.stopPropagation();
+                const card = btn.closest('.post-card');
+                const panel = card.querySelector('.about-post-panel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+
+            // 6. FOLLOW/UNFOLLOW FROM MENU
+            if (btn.classList.contains('follow-from-menu-btn')) {
+                closeAllPostMenus();
+                const authorId = btn.dataset.authorId;
+                const authorUsername = btn.dataset.authorUsername;
+                const labelSpan = btn.querySelector('.follow-menu-label');
+                const isFollowing = labelSpan.textContent.includes('Unfollow');
+
+                if (isFollowing) {
+                    labelSpan.textContent = `Follow @${authorUsername}`;
+                    try {
+                        const { error } = await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', authorId);
+                        if (error) throw error;
+                        showGlobalToast(`Unfollowed @${authorUsername}`, "info");
+                    } catch (err) {
+                        labelSpan.textContent = `Unfollow @${authorUsername}`;
+                        showGlobalToast("Failed to unfollow. Please try again.", "error");
+                        console.error(err);
+                    }
+                } else {
+                    labelSpan.textContent = `Unfollow @${authorUsername}`;
+                    try {
+                        const { error } = await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: authorId });
+                        if (error) throw error;
+                        createNotification('follow', null, authorId);
+                        showGlobalToast(`Following @${authorUsername}`, "success");
+                    } catch (err) {
+                        labelSpan.textContent = `Follow @${authorUsername}`;
+                        showGlobalToast("Failed to follow. Please try again.", "error");
+                        console.error(err);
+                    }
+                }
+                return;
+            }
+
+            // 7. SAVE/UNSAVE FROM MENU
+            if (btn.classList.contains('save-from-menu-btn')) {
+                closeAllPostMenus();
+                const isSaved = btn.dataset.isSaved === '1';
+                const labelSpan = btn.querySelector('.save-menu-label');
+                const svg = btn.querySelector('svg');
+
+                if (isSaved) {
+                    btn.dataset.isSaved = '0';
+                    labelSpan.textContent = 'Save post';
+                    btn.classList.remove('text-green-600');
+                    btn.classList.add('text-slate-700');
+                    if (svg) {
+                        svg.setAttribute('fill', 'none');
+                        svg.classList.remove('text-green-500');
+                        svg.classList.add('text-slate-500');
+                    }
+                    try {
+                        const { error } = await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+                        if (error) throw error;
+                    } catch (err) {
+                        btn.dataset.isSaved = '1';
+                        labelSpan.textContent = 'Unsave post';
+                        btn.classList.add('text-green-600');
+                        btn.classList.remove('text-slate-700');
+                        if (svg) {
+                            svg.setAttribute('fill', 'currentColor');
+                            svg.classList.add('text-green-500');
+                            svg.classList.remove('text-slate-500');
+                        }
+                        showGlobalToast("Failed to unsave post.", "error");
+                    }
+                } else {
+                    btn.dataset.isSaved = '1';
+                    labelSpan.textContent = 'Unsave post';
+                    btn.classList.add('text-green-600');
+                    btn.classList.remove('text-slate-700');
+                    if (svg) {
+                        svg.setAttribute('fill', 'currentColor');
+                        svg.classList.add('text-green-500');
+                        svg.classList.remove('text-slate-500');
+                    }
+                    try {
+                        const { error } = await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
+                        if (error) throw error;
+                    } catch (err) {
+                        btn.dataset.isSaved = '0';
+                        labelSpan.textContent = 'Save post';
+                        btn.classList.remove('text-green-600');
+                        btn.classList.add('text-slate-700');
+                        if (svg) {
+                            svg.setAttribute('fill', 'none');
+                            svg.classList.remove('text-green-500');
+                            svg.classList.add('text-slate-500');
+                        }
+                        showGlobalToast("Failed to save post.", "error");
+                    }
+                }
+                return;
+            }
+
+            // 8. DELETE FROM MENU
+            if (btn.classList.contains('delete-from-menu-btn')) {
+                closeAllPostMenus();
+                if (confirm("Delete this post?")) {
+                    const { error } = await supabase.from('posts').delete().eq('id', postId);
+                    if (!error) {
+                        btn.closest('.post-card').remove();
+                        showGlobalToast("Post deleted successfully", "success");
+                    } else {
+                        showGlobalToast("Error deleting post: " + error.message, "error");
+                    }
+                }
+                return;
+            }
+
+            // 9. LIKE
             if (btn.classList.contains('like-btn')) {
-                // Guard: ignore if a DB request for this post is already in-flight
                 if (inFlightLikes.has(postId)) return;
                 inFlightLikes.add(postId);
 
                 const countSpan = btn.querySelector('span');
-                const icon = btn.querySelector('svg') || btn.querySelector('i');
+                const icon = btn.querySelector('svg');
                 const isLiked = btn.classList.contains('text-red-500');
 
                 if (isLiked) {
-                    // Optimistic unlike
-                    btn.classList.remove('text-red-500');
-                    if (icon) icon.classList.remove('fill-current');
+                    btn.classList.remove('text-red-500', 'bg-red-50');
+                    btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                    if (icon) icon.setAttribute('fill', 'none');
                     countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
                     try {
                         const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
                         if (error) throw error;
                     } catch (err) {
-                        btn.classList.add('text-red-500');
-                        if (icon) icon.classList.add('fill-current');
+                        btn.classList.add('text-red-500', 'bg-red-50');
+                        btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                        if (icon) icon.setAttribute('fill', 'currentColor');
                         countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                        showGlobalToast("Failed to unlike post. Please check your connection.", "error");
+                        showGlobalToast("Failed to unlike post.", "error");
                         console.error("Unlike DB error:", err);
                     }
                 } else {
-                    // Optimistic like
-                    btn.classList.add('text-red-500');
-                    if (icon) icon.classList.add('fill-current');
+                    btn.classList.add('text-red-500', 'bg-red-50');
+                    btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                    if (icon) icon.setAttribute('fill', 'currentColor');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
                     try {
                         const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
                         if (error) throw error;
-                        // Only notify if liker is NOT the post author (self-like guard)
                         const postCard = btn.closest('.post-card');
                         if (postCard && postCard.dataset.authorId && postCard.dataset.authorId !== currentUser.uid) {
                             createNotification('like', postId, postCard.dataset.authorId);
                         }
                     } catch (err) {
-                        btn.classList.remove('text-red-500');
-                        if (icon) icon.classList.remove('fill-current');
+                        btn.classList.remove('text-red-500', 'bg-red-50');
+                        btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
+                        if (icon) icon.setAttribute('fill', 'none');
                         countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                        showGlobalToast("Failed to like post. Please check your connection.", "error");
+                        showGlobalToast("Failed to like post.", "error");
                         console.error("Like DB error:", err);
                     }
                 }
-                // Release the in-flight lock
                 inFlightLikes.delete(postId);
             }
 
-            // COMMENTS TOGGLE
+            // 10. COMMENT TOGGLE
             if (btn.classList.contains('comment-btn')) {
                 const card = btn.closest('.post-card');
                 const section = card.querySelector('.comment-section');
-                section.classList.toggle('hidden');
-                if (!section.classList.contains('hidden')) {
+                const isHidden = section.style.display === 'none';
+                section.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
                     loadComments(postId, section.querySelector('.comments-list'));
                 }
             }
 
-            // DELETE
-            if (btn.classList.contains('delete-btn')) {
-                if (confirm("Delete this post?")) {
-                    const { error } = await supabase.from('posts').delete().eq('id', postId);
-                    if (!error) btn.closest('.post-card').remove();
-                }
-            }
-
-            // SAVE
-            if (btn.classList.contains('save-btn')) {
-                const icon = btn.querySelector('i');
-                const span = btn.querySelector('span');
-                const isSaved = btn.classList.contains('text-green-500');
-
-                if (isSaved) {
-                    btn.classList.remove('text-green-500');
-                    if (span) span.textContent = 'Save';
-                    await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
-                } else {
-                    btn.classList.add('text-green-500');
-                    if (span) span.textContent = 'Saved';
-                    await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
-                }
-            }
-
-            // DELETE COMMENT
+            // 11. DELETE COMMENT
             if (btn.classList.contains('delete-comment-btn')) {
                 const commentId = btn.dataset.commentId;
                 if (confirm("Delete this comment?")) {
                     const { error } = await supabase.from('comments').delete().eq('id', commentId);
                     if (!error) {
-                        // Remove comment from UI
                         const commentDiv = btn.closest('.comment-item');
                         if (commentDiv) commentDiv.remove();
 
-                        // Update count
                         const postCard = btn.closest('.post-card');
                         const countSpan = postCard.querySelector('.comment-btn span');
                         if (countSpan) countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
@@ -844,6 +1013,33 @@
                 const from = currentPage * POSTS_PER_PAGE;
                 const to = from + POSTS_PER_PAGE - 1;
 
+                // Load target post on first page if provided as deep link
+                let targetPost = null;
+                if (currentPage === 0 && targetPostId && !searchTerm) {
+                    try {
+                        const { data, error } = await supabase.from("posts")
+                            .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                            .eq('id', targetPostId)
+                            .maybeSingle();
+                        if (data && !error) {
+                            targetPost = data;
+                        }
+                    } catch (e) {
+                        console.warn("Failed to fetch target post for deep link:", e);
+                    }
+                }
+
+                if (targetPost) {
+                    const [likeStates, saveStates, followStates] = await Promise.all([
+                        getPostLikeStates([targetPost.id]),
+                        getPostSaveStates([targetPost.id]),
+                        getFollowStates([targetPost.user_id])
+                    ]);
+                    targetPost.is_liked_by_user = !!likeStates[String(targetPost.id)];
+                    targetPost.is_saved_by_user = !!saveStates[String(targetPost.id)];
+                    targetPost.is_following_author = !!followStates[String(targetPost.user_id)];
+                }
+
                 let query = supabase.from("posts")
                     .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                     .ilike('content', `%${searchTerm}%`) // Filter posts by content
@@ -857,19 +1053,27 @@
                     query = query.is('group_id', null);
                 }
 
+                // Exclude targetPost if already rendered
+                if (renderedPostIds.size > 0) {
+                    query = query.not('id', 'in', `(${Array.from(renderedPostIds).join(',')})`);
+                }
+
                 let { data: posts, error } = await query;
 
                 if (posts && posts.length > 0) {
                     const postIds = posts.map(p => p.id);
-                    const [likeStates, saveStates] = await Promise.all([
+                    const authorIds = [...new Set(posts.map(p => p.user_id))];
+                    const [likeStates, saveStates, followStates] = await Promise.all([
                         getPostLikeStates(postIds),
-                        getPostSaveStates(postIds)
+                        getPostSaveStates(postIds),
+                        getFollowStates(authorIds)
                     ]);
 
                     posts = posts.map(post => ({
                         ...post,
                         is_liked_by_user: !!likeStates[String(post.id)],
-                        is_saved_by_user: !!saveStates[String(post.id)]
+                        is_saved_by_user: !!saveStates[String(post.id)],
+                        is_following_author: !!followStates[String(post.user_id)]
                     }));
                 }
 
@@ -883,17 +1087,36 @@
                     sentinelSpinner.classList.add('opacity-0');
                 }
 
-                if (posts && posts.length > 0) {
+                if ((posts && posts.length > 0) || targetPost) {
                     if (currentPage === 0) {
                         container.innerHTML = ''; // clear the skeletons!
                     }
-                    posts.forEach(post => {
-                        const el = createPostElement(post, currentUser);
+
+                    // Render target post first if page is 0
+                    if (currentPage === 0 && targetPost) {
+                        const el = createPostElement(targetPost, currentUser);
+                        // Highlight target post with standard Tailwind border and subtle shadow
+                        el.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'transition-all');
                         container.appendChild(el);
                         lucide.createIcons({ nodes: [el] });
-                    });
+                        renderedPostIds.add(targetPost.id);
+                        
+                        setTimeout(() => {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 500);
+                    }
+
+                    if (posts && posts.length > 0) {
+                        posts.forEach(post => {
+                            const el = createPostElement(post, currentUser);
+                            container.appendChild(el);
+                            lucide.createIcons({ nodes: [el] });
+                            renderedPostIds.add(post.id);
+                        });
+                    }
+                    
                     currentPage++;
-                    if (posts.length < POSTS_PER_PAGE) {
+                    if (posts && posts.length < POSTS_PER_PAGE) {
                         hasMore = false;
                     }
                 } else if (currentPage === 0) {
@@ -929,6 +1152,21 @@
                 return {};
             }
             return (data || []).reduce((acc, save) => ({ ...acc, [String(save.post_id)]: true }), {});
+        }
+
+        async function getFollowStates(authorIds) {
+            if (!currentUser || authorIds.length === 0) return {};
+            const { data, error } = await supabase
+                .from('followers')
+                .select('following_id')
+                .eq('follower_id', currentUser.uid)
+                .in('following_id', authorIds);
+
+            if (error) {
+                console.warn('getFollowStates failed:', error.message);
+                return {};
+            }
+            return (data || []).reduce((acc, f) => ({ ...acc, [String(f.following_id)]: true }), {});
         }
 
         // --- OPTIMIZATION: INTERSECTION OBSERVER FOR INFINITE SCROLL ---
@@ -1108,6 +1346,7 @@
                     .subscribe();
 
             } else {
+                currentUser = null;
                 if (globalMessageListener) {
                     supabase.removeChannel(globalMessageListener);
                     globalMessageListener = null;
@@ -1116,7 +1355,30 @@
                     supabase.removeChannel(globalNotificationChannel);
                     globalNotificationChannel = null;
                 }
-                window.location.href = 'Auth/login.html';
+                
+                // Configure UI for guest:
+                document.getElementById('post-content').classList.add('hidden');
+                document.getElementById('guest-join-banner').classList.remove('hidden');
+                
+                const sidebarName = document.getElementById('sidebar-profile-name');
+                if (sidebarName) sidebarName.textContent = "Guest Slacker";
+                const sidebarEmail = document.getElementById('sidebar-profile-email');
+                if (sidebarEmail) sidebarEmail.textContent = "Sign in to share your stories";
+                
+                const sidebarNameMobile = document.getElementById('sidebar-profile-name-mobile');
+                if (sidebarNameMobile) sidebarNameMobile.textContent = "Guest Slacker";
+                const sidebarEmailMobile = document.getElementById('sidebar-profile-email-mobile');
+                if (sidebarEmailMobile) sidebarEmailMobile.textContent = "Sign in to share your stories";
+                
+                const profileMenu = document.getElementById('profile-menu');
+                if (profileMenu) profileMenu.classList.add('hidden');
+                const navLoginBtn = document.getElementById('nav-login-btn');
+                if (navLoginBtn) navLoginBtn.classList.remove('hidden');
+                
+                const logoutNavLi = document.getElementById('logout-btn')?.closest('li');
+                if (logoutNavLi) logoutNavLi.style.display = 'none';
+
+                if (currentPage === 0) fetchPosts();
             }
         });
 
@@ -1380,6 +1642,11 @@
                 showGlobalToast("Skipped tour. Direct entry into unproductivity. 🥱", "info");
             });
         }
+
+        // Close menus when clicking outside
+        document.addEventListener('click', () => {
+            closeAllPostMenus();
+        });
 
         lucide.createIcons();
     </script>
