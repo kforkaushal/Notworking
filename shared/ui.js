@@ -159,7 +159,7 @@ export function createPostElement(post, currentUser, options = {}) {
     const telegramUrl = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
     const div = document.createElement('div');
-    div.className = 'post-card bg-white rounded-2xl shadow-sm border border-slate-200 mb-5 overflow-hidden';
+    div.className = 'post-card bg-white rounded-2xl shadow-[0_2px_12px_rgba(15,23,42,0.04)] border border-slate-200/80 mb-5 overflow-visible transition-shadow hover:shadow-[0_4px_20px_rgba(15,23,42,0.06)]';
     div.dataset.authorId = post.user_id;
     div.dataset.postId = String(post.id);
 
@@ -167,8 +167,8 @@ export function createPostElement(post, currentUser, options = {}) {
     let mediaHTML = '';
     if (post.media_url) {
         mediaHTML = post.media_type === 'video'
-            ? `<div class="border-t border-slate-100"><video controls src="${post.media_url}" class="w-full max-h-[480px] object-contain bg-black"></video></div>`
-            : `<div class="border-t border-slate-100"><img src="${post.media_url}" loading="lazy" alt="Post media" class="w-full max-h-[480px] object-cover bg-slate-100 cursor-pointer hover:opacity-95 transition"></div>`;
+            ? `<div class="border-y border-slate-100 bg-slate-950 flex items-center justify-center overflow-hidden"><video controls src="${post.media_url}" class="w-full max-h-[500px] object-contain bg-black"></video></div>`
+            : `<div class="border-y border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden"><img src="${post.media_url}" loading="lazy" alt="Post media" class="w-full max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition duration-300"></div>`;
     }
 
     // Delete item only for owner (inside 3-dot menu)
@@ -184,19 +184,21 @@ export function createPostElement(post, currentUser, options = {}) {
 
     div.innerHTML = `
         <!-- ── Post Header ─────────────────────────────── -->
-        <div class="px-5 pt-4 pb-3 flex items-start gap-3">
-            <a href="profile.html?username=${escapeHtml(username)}" class="flex-shrink-0">
-                <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-slate-200 hover:opacity-90 transition"
-                     onerror="this.src='src/assets/avatar-placeholder.png'" alt="${escapeHtml(name)}">
-            </a>
-            <div class="flex-1 min-w-0">
-                <a href="profile.html?username=${escapeHtml(username)}" class="font-bold text-slate-900 hover:underline text-sm leading-tight">${escapeHtml(name)}</a>
-                <p class="text-xs text-slate-400 mt-0.5">@${escapeHtml(username)} · ${postDateShort}</p>
+        <div class="px-5 pt-4 pb-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <a href="profile.html?username=${escapeHtml(username)}" class="flex-shrink-0 relative group">
+                    <img src="${avatar}" class="w-11 h-11 rounded-full object-cover border border-slate-100 hover:ring-2 hover:ring-blue-100 transition-all"
+                         onerror="this.src='src/assets/avatar-placeholder.png'" alt="${escapeHtml(name)}">
+                </a>
+                <div class="min-w-0 flex-1">
+                    <a href="profile.html?username=${escapeHtml(username)}" class="font-bold text-slate-800 hover:text-blue-600 hover:underline text-[15px] leading-tight block truncate">${escapeHtml(name)}</a>
+                    <p class="text-xs text-slate-400 mt-0.5 font-normal">@${escapeHtml(username)} · ${postDateShort}</p>
+                </div>
             </div>
 
             <!-- ── 3-Dot Menu ──────────────────────────── -->
             <div class="relative flex-shrink-0">
-                <button class="three-dot-btn p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" data-post-id="${post.id}" title="More options" aria-label="Post options">
+                <button class="three-dot-btn p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all duration-150 active:scale-95" data-post-id="${post.id}" title="More options" aria-label="Post options">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
                     </svg>
@@ -243,17 +245,17 @@ export function createPostElement(post, currentUser, options = {}) {
 
         <!-- ── Post Content ────────────────────────────── -->
         <div class="px-5 pb-3">
-            <p class="text-slate-800 text-[15px] whitespace-pre-wrap break-words leading-relaxed" style="overflow-wrap:anywhere;word-break:break-word">${escapeHtml(post.content || '')}</p>
+            <p class="text-slate-700 text-[15px] whitespace-pre-wrap break-words leading-relaxed font-normal" style="overflow-wrap:anywhere;word-break:break-word">${escapeHtml(post.content || '')}</p>
         </div>
 
         <!-- ── Media ──────────────────────────────────── -->
         ${mediaHTML}
 
         <!-- ── Action Bar ─────────────────────────────── -->
-        <div class="px-3 py-1 flex items-center gap-0.5 border-t border-slate-100">
+        <div class="px-4 py-1.5 flex items-center gap-1 border-t border-slate-100 bg-slate-50/20">
 
             <!-- Like -->
-            <button class="like-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLiked ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}"
+            <button class="like-btn flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-150 active:scale-95 ${isLiked ? 'text-red-500 bg-red-50/70' : 'text-slate-500 hover:text-red-500 hover:bg-red-50/50'}"
                 data-post-id="${post.id}" data-requires-auth="true" title="Like">
                 <svg class="w-5 h-5" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
@@ -262,7 +264,7 @@ export function createPostElement(post, currentUser, options = {}) {
             </button>
 
             <!-- Comment -->
-            <button class="comment-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+            <button class="comment-btn flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-blue-600 hover:bg-blue-50/50 transition-all duration-150 active:scale-95"
                 data-post-id="${post.id}" title="Comment">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -272,7 +274,7 @@ export function createPostElement(post, currentUser, options = {}) {
 
             <!-- Share (always available — no auth needed) -->
             <div class="relative ml-auto">
-                <button class="share-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                <button class="share-btn flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 transition-all duration-150 active:scale-95"
                     data-post-id="${post.id}" data-post-url="${postUrl}" title="Share">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
