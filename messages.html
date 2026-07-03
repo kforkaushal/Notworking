@@ -259,6 +259,7 @@
         let callSessionId = null;
         let callSessionChannel = null;
         let userCallsChannel = null;
+        let globalMessagesChannel = null;
         let isCaller = false;
         let activeCallType = null; // 'audio' or 'video'
         let callTimerInterval = null;
@@ -1157,6 +1158,9 @@
                 }
 
                 // Register user-calls channel for incoming WebRTC call signaling
+                if (userCallsChannel) {
+                    supabase.removeChannel(userCallsChannel);
+                }
                 userCallsChannel = supabase.channel(`user-calls:${user.uid}`)
                     .on('broadcast', { event: 'incoming-call' }, handleIncomingCallSignal)
                     .subscribe();
@@ -1165,7 +1169,10 @@
                 await loadConversations();
 
                 // Set up a global listener for ANY incoming message
-                supabase.channel('public:messages:all')
+                if (globalMessagesChannel) {
+                    supabase.removeChannel(globalMessagesChannel);
+                }
+                globalMessagesChannel = supabase.channel('public:messages:all')
                     .on('postgres_changes', {
                         event: 'INSERT',
                         schema: 'public',
@@ -1219,6 +1226,10 @@
                 if (userCallsChannel) {
                     supabase.removeChannel(userCallsChannel);
                     userCallsChannel = null;
+                }
+                if (globalMessagesChannel) {
+                    supabase.removeChannel(globalMessagesChannel);
+                    globalMessagesChannel = null;
                 }
                 window.location.href = 'Auth/login.html';
             }

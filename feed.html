@@ -462,9 +462,10 @@
     <!-- Firebase -->
     <script type="module">
         // FIX 1: Changed "../Data" to "./Data" so imports work from the root folder
-        import { auth } from './Data/firebase-client.js';
+        import { auth, db } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onIdTokenChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
         import { createPostElement, createPostSkeleton, showToast as showGlobalToast } from './shared/ui.js';
 
         let currentPage = 0;
@@ -472,6 +473,8 @@
         let isLoading = false;
         let hasMore = true;
         let currentUser = null;
+        let globalMessageListener = null;
+        let globalNotificationChannel = null;
 
         // Group Logic
         const urlParams = new URLSearchParams(window.location.search);
@@ -907,10 +910,65 @@
         // --- INIT ---
         onIdTokenChanged(auth, async (user) => {
             if (user) {
-                const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.uid).single();
                 currentUser = user;
                 // FIX: Use manual token setter to bypass Supabase Auth RS256 validation error
                 await setSupabaseToken(await user.getIdToken());
+
+                // Fetch the current user's profile details (including bio, experience, skills)
+                let profile = null;
+                try {
+                    const { data, error } = await supabase.from('profiles')
+                        .select('id, username, full_name, bio, experience, skills, avatar_url, email')
+                        .eq('id', user.uid)
+                        .maybeSingle();
+                    if (!error) profile = data;
+                } catch (e) {
+                    console.error("Error querying profile in feed.html:", e);
+                }
+
+                // Lazy Profile Backfill: If profile doesn't exist in Supabase, create it on the fly
+                if (!profile) {
+                    console.log("No profile found for authenticated user in feed.html. Backfilling...");
+                    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                    const username = `user_${randomSuffix}`;
+
+                    const newProfileData = {
+                        id: user.uid,
+                        username: username,
+                        full_name: user.displayName || 'Anonymous User',
+                        email: user.email,
+                        avatar_url: user.photoURL || 'src/assets/avatar-placeholder.png',
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { data: backfilledProfile, error: backfillError } = await supabase
+                        .from('profiles')
+                        .upsert(newProfileData, { onConflict: 'id' })
+                        .select()
+                        .maybeSingle();
+
+                    if (!backfillError && backfilledProfile) {
+                        profile = backfilledProfile;
+                        console.log("Profile backfilled successfully in feed.html:", profile);
+
+                        // Also sync/create in Firestore
+                        try {
+                            const userRef = doc(db, "users", user.uid);
+                            await setDoc(userRef, {
+                                displayName: user.displayName || 'Anonymous User',
+                                username: username,
+                                email: user.email,
+                                photoURL: user.photoURL || 'src/assets/avatar-placeholder.png',
+                                badges: ["Early Adopter"],
+                                createdAt: new Date()
+                            }, { merge: true });
+                        } catch (fsError) {
+                            console.error("Firestore sync failed:", fsError);
+                        }
+                    } else {
+                        console.error("Failed to backfill profile in Supabase:", backfillError);
+                    }
+                }
 
                 const photo = user.photoURL || 'src/assets/avatar-placeholder.png';
                 const name = user.displayName || 'User';
@@ -971,7 +1029,10 @@
                 // Request audio permission on first user interaction
                 document.addEventListener('click', playSound, { once: true });
 
-                const messageListener = supabase.channel('public:messages:feed')
+                if (globalMessageListener) {
+                    supabase.removeChannel(globalMessageListener);
+                }
+                globalMessageListener = supabase.channel('public:messages:feed')
                     .on('postgres_changes', {
                         event: 'INSERT',
                         schema: 'public',
@@ -1012,7 +1073,10 @@
                 }
 
                 // --- REALTIME NOTIFICATIONS LISTENER ---
-                supabase.channel(`notif:${user.uid}`)
+                if (globalNotificationChannel) {
+                    supabase.removeChannel(globalNotificationChannel);
+                }
+                globalNotificationChannel = supabase.channel(`notif:${user.uid}`)
                     .on('postgres_changes', {
                         event: 'INSERT',
                         schema: 'public',
@@ -1048,6 +1112,14 @@
                     .subscribe();
 
             } else {
+                if (globalMessageListener) {
+                    supabase.removeChannel(globalMessageListener);
+                    globalMessageListener = null;
+                }
+                if (globalNotificationChannel) {
+                    supabase.removeChannel(globalNotificationChannel);
+                    globalNotificationChannel = null;
+                }
                 window.location.href = 'Auth/login.html';
             }
         });
