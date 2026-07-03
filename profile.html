@@ -354,23 +354,47 @@
             // LIKE
             if (btn.classList.contains('like-btn')) {
                 const countSpan = btn.querySelector('span');
-                const icon = btn.querySelector('svg');
+                const icon = btn.querySelector('svg') || btn.querySelector('i');
                 const isLiked = btn.classList.contains('text-red-500');
 
+                // Optimistic UI updates
                 if (isLiked) {
                     btn.classList.remove('text-red-500');
                     if (icon) icon.classList.remove('fill-current');
                     countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                    await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+
+                    try {
+                        const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
+                        if (error) throw error;
+                    } catch (err) {
+                        // Rollback on database failure
+                        btn.classList.add('text-red-500');
+                        if (icon) icon.classList.add('fill-current');
+                        countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                        showToast("Failed to unlike post. Please check your connection.", "error");
+                        console.error("Unlike database error in profile.html:", err);
+                    }
                 } else {
                     btn.classList.add('text-red-500');
                     if (icon) icon.classList.add('fill-current');
                     countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                    await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
 
-                    const postCard = btn.closest('.post-card');
-                    if (postCard && postCard.dataset.authorId) {
-                        createNotification('like', postId, postCard.dataset.authorId);
+                    try {
+                        const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
+                        if (error) throw error;
+
+                        // Notify author only if database write succeeds
+                        const postCard = btn.closest('.post-card');
+                        if (postCard && postCard.dataset.authorId) {
+                            createNotification('like', postId, postCard.dataset.authorId);
+                        }
+                    } catch (err) {
+                        // Rollback on database failure
+                        btn.classList.remove('text-red-500');
+                        if (icon) icon.classList.remove('fill-current');
+                        countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
+                        showToast("Failed to like post. Please check your connection.", "error");
+                        console.error("Like database error in profile.html:", err);
                     }
                 }
             }
@@ -663,8 +687,8 @@
                         console.error("Error fetching profile in profile.html:", e);
                     }
 
-                    // Kick back to setup if profile is missing/incomplete
-                    if (!profile || !profile.username || !profile.full_name || !profile.bio || !profile.experience || !profile.skills) {
+                    // Kick back to setup if profile is missing or lacks a username
+                    if (!profile || !profile.username) {
                         console.log("Profile incomplete or missing. Redirecting to setup.html...");
                         window.location.href = 'Auth/setup.html';
                         return;

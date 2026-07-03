@@ -156,13 +156,14 @@
                 try {
                     await setSupabaseSession(user);
                     const { data: profile } = await supabase.from('profiles')
-                        .select('username, full_name, bio, experience, skills')
+                        .select('username')
                         .eq('id', user.uid)
                         .maybeSingle();
 
-                    if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                    if (profile && profile.username) {
                         window.location.href = '../feed.html';
                     } else {
+                        localStorage.setItem('nw_signing_up', 'true');
                         window.location.href = 'setup.html';
                     }
                 } catch (error) {
@@ -178,7 +179,7 @@
         const googleSignInBtn = document.getElementById('google-signin-btn');
 
         loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent the form from submitting the default way
+            e.preventDefault(); // Prevent default submission
             isAuthInProgress = true;
 
             const email = loginForm.email.value;
@@ -188,13 +189,14 @@
             try {
                 const user = await handleEmailPasswordLogin(email, password, rememberMe);
                 const { data: profile } = await supabase.from('profiles')
-                    .select('username, full_name, bio, experience, skills')
+                    .select('username')
                     .eq('id', user.uid)
                     .maybeSingle();
 
-                if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                if (profile && profile.username) {
                     window.location.href = '../feed.html';
                 } else {
+                    localStorage.setItem('nw_signing_up', 'true');
                     window.location.href = 'setup.html';
                 }
             } catch (error) {
@@ -213,6 +215,7 @@
             try {
                 const { user, isNewUser } = await handleGoogleAuth();
                 if (isNewUser) {
+                    localStorage.setItem('nw_signing_up', 'true');
                     window.location.href = 'setup.html';
                 } else {
                     window.location.href = '../feed.html';
@@ -223,7 +226,7 @@
                 await auth.signOut();
                 errorMessageDiv.classList.remove('bg-green-100', 'text-green-600');
                 errorMessageDiv.classList.add('bg-red-100', 'text-red-600');
-                displayError(errorMessageDiv, `Google Auth Failed: ${error.message}`);
+                displayError(errorMessageDiv, `Google Login Failed: ${error.message}`);
             }
         });
 

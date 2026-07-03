@@ -288,9 +288,8 @@
                 return;
             }
             currentUser = user;
-            await setSupabaseSession(user);
 
-            // Populate defaults from auth profile
+            // Populate defaults from Firebase Auth profile immediately (non-blocking)
             const nameInput = document.getElementById('fullname');
             if (user.displayName && !nameInput.value) {
                 nameInput.value = user.displayName;
@@ -302,10 +301,19 @@
                 selectAvatarPreset(user.photoURL);
             }
 
-            // Attempt to pre-fill from database if profile row already exists (incomplete)
+            // Await Supabase session initialization and load database draft details
             try {
+                await setSupabaseSession(user);
+                
                 const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.uid).maybeSingle();
                 if (profile) {
+                    // Redirect existing users to feed immediately
+                    if (profile.username && localStorage.getItem('nw_signing_up') !== 'true') {
+                        console.log("Existing user detected. Redirecting to feed...");
+                        window.location.href = '../feed.html';
+                        return;
+                    }
+
                     if (profile.full_name) nameInput.value = profile.full_name;
                     if (profile.username) {
                         document.getElementById('username').value = profile.username;
@@ -352,11 +360,13 @@
 
             try {
                 // Query database for conflicting username
-                const { data } = await supabase.from('profiles')
+                const { data, error } = await supabase.from('profiles')
                     .select('id')
                     .eq('username', val)
                     .neq('id', currentUser.uid)
                     .maybeSingle();
+
+                if (error) throw error;
 
                 spinner.classList.add('hidden');
                 if (data) {
@@ -372,6 +382,10 @@
                 }
             } catch (err) {
                 spinner.classList.add('hidden');
+                helperText.textContent = "Error checking username. Please check your connection.";
+                helperText.className = "text-xs mt-1.5 text-red-400";
+                crossIcon.classList.remove('hidden');
+                usernameValid = false;
                 console.error("Error checking username:", err);
             }
             updateSubmitState();
@@ -481,7 +495,7 @@
 
                 if (supabaseError) throw supabaseError;
 
-                // 2. Save User Document in Firestore
+                // 2. Save User Document in Firestore (Non-blocking background sync)
                 const firestorePayload = {
                     displayName: fullname,
                     username: username,
@@ -493,10 +507,13 @@
                     createdAt: new Date().toISOString()
                 };
 
-                await setDoc(doc(db, "users", currentUser.uid), firestorePayload, { merge: true });
+                setDoc(doc(db, "users", currentUser.uid), firestorePayload, { merge: true })
+                    .then(() => console.log("Firestore user doc synced successfully."))
+                    .catch(fsErr => console.warn("Firestore sync failed (non-blocking):", fsErr));
 
                 // 3. Mark in localStorage that user onboarding tour should trigger
                 localStorage.setItem('nw_just_onboarded', 'true');
+                localStorage.removeItem('nw_signing_up');
 
                 // 4. Redirect to Main Feed
                 window.location.href = '../feed.html';

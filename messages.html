@@ -1195,7 +1195,7 @@
                 // Update nav bar & store current user profile for calling
                 const { data: userProfile } = await supabase.from('profiles').select('*').eq('id', user.uid).maybeSingle();
 
-                if (!userProfile || !userProfile.username || !userProfile.full_name || !userProfile.bio || !userProfile.experience || !userProfile.skills) {
+                if (!userProfile || !userProfile.username) {
                     console.log("Profile incomplete or missing. Redirecting to setup.html...");
                     window.location.href = 'Auth/setup.html';
                     return;

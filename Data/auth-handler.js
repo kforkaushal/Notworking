@@ -107,12 +107,12 @@ export async function handleGoogleAuth() {
     let isNewUser = true;
     try {
         const { data: profile } = await supabase.from('profiles')
-            .select('id, username, full_name, bio, experience, skills')
+            .select('username')
             .eq('id', user.uid)
             .maybeSingle();
 
-        // A profile is complete if it exists and has username, full_name, bio, experience, and skills
-        if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+        // A user is considered existing if they have a username set
+        if (profile && profile.username) {
             isNewUser = false;
         }
     } catch (e) {

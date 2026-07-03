@@ -172,7 +172,7 @@
                     console.error("Error checking profile in notifications.html:", e);
                 }
 
-                if (!profile || !profile.username || !profile.full_name || !profile.bio || !profile.experience || !profile.skills) {
+                if (!profile || !profile.username) {
                     console.log("Profile incomplete or missing. Redirecting to setup.html...");
                     window.location.href = 'Auth/setup.html';
                     return;

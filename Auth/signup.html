@@ -152,13 +152,14 @@
                 console.log('User already logged in. Verifying Supabase session before redirect...');
                 try {
                     const { data: profile } = await supabase.from('profiles')
-                        .select('username, full_name, bio, experience, skills')
+                        .select('username')
                         .eq('id', user.uid)
                         .maybeSingle();
 
-                    if (profile && profile.username && profile.full_name && profile.bio && profile.experience && profile.skills) {
+                    if (profile && profile.username) {
                         window.location.href = '../feed.html';
                     } else {
+                        localStorage.setItem('nw_signing_up', 'true');
                         window.location.href = 'setup.html';
                     }
                 } catch (error) {
@@ -183,6 +184,7 @@
 
             try {
                 await handleEmailPasswordSignUp(fullname, email, password, username);
+                localStorage.setItem('nw_signing_up', 'true');
                 window.location.href = 'setup.html';
             } catch (error) {
                 isAuthInProgress = false;
@@ -200,6 +202,7 @@
             try {
                 const { user, isNewUser } = await handleGoogleAuth();
                 if (isNewUser) {
+                    localStorage.setItem('nw_signing_up', 'true');
                     window.location.href = 'setup.html';
                 } else {
                     window.location.href = '../feed.html';
