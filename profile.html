@@ -60,7 +60,7 @@
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto px-4 py-8">
+    <main class="max-w-4xl mx-auto px-4 pt-8 pb-28">
         <div class="h-48 bg-slate-800 rounded-t-lg relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-700 opacity-80"></div>
         </div>
@@ -187,7 +187,7 @@
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-        import { createPostElement, createPostSkeleton, showToast, showAuthGateModal, closeAllPostMenus } from './shared/ui.js';
+        import { createPostElement, createPostSkeleton, showToast, showAuthGateModal, closeAllPostMenus, escapeHtml, compressImageToWebP } from './shared/ui.js';
 
         let currentUser = null;
         let viewedProfileId = null;
@@ -195,26 +195,7 @@
         // Prevents double-click race conditions on like/unlike (flowchart fix #4)
         const inFlightLikes = new Set();
 
-        // --- NOTIFICATION HELPER ---
-        async function createNotification(type, entityId, recipientId) {
-            if (!currentUser || currentUser.uid === recipientId) return;
-
-            const payload = {
-                type,
-                user_id: recipientId,
-                actor_id: currentUser.uid
-            };
-            // For profile, we only have 'follow' which has no post_id
-            if (entityId && (type === 'like' || type === 'comment')) {
-                payload.post_id = entityId;
-            }
-
-            try {
-                await supabase.from('notifications').insert(payload);
-            } catch (error) {
-                console.error("Notification failed:", error);
-            }
-        }
+        // createNotification is now imported from shared/ui.js
 
         // --- FETCH & DISPLAY USER POSTS ---
         async function fetchUserPosts(userId) {
@@ -285,346 +266,17 @@
             lucide.createIcons({ nodes: [container] });
         }
 
-        // --- COMMENTS LOGIC ---
-        async function loadComments(postId, container) {
-            container.innerHTML = '<div class="text-xs text-slate-400 p-2">Loading...</div>';
-            const { data: comments } = await supabase.from('comments')
-                .select('id, user_id, content, created_at, profiles(username, avatar_url)')
-                .eq('post_id', postId).order('created_at', { ascending: true });
-
-            container.innerHTML = '';
-            if (!comments || !comments.length) {
-                container.innerHTML = '<div class="text-xs text-slate-400 p-2">No comments yet.</div>';
-                return;
-            }
-
-            comments.forEach(c => {
-                const isOwner = currentUser && c.user_id === currentUser.uid;
-                const deleteBtn = isOwner ? `
-                    <button class="delete-comment-btn text-slate-400 hover:text-red-500 transition p-1" title="Delete Comment" data-comment-id="${c.id}">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>` : '';
-
-                const div = document.createElement('div');
-                div.className = "comment-item flex gap-2 mb-2 text-sm group";
-                div.innerHTML = `
-                <img src="${c.profiles?.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-6 h-6 rounded-full mt-1 object-cover">
-                <div class="flex-1">
-                    <div class="bg-slate-50 p-2 rounded-lg relative">
-                        <div class="flex justify-between items-start">
-                            <span class="font-bold text-slate-900 text-xs">${c.profiles?.username || 'User'}</span>
-                            ${deleteBtn}
-                        </div>
-                        <p class="text-slate-700 mt-1">${c.content}</p>
-                    </div>
-                </div>`;
-                container.appendChild(div);
-            });
-            lucide.createIcons({ nodes: [container] });
-        }
-
-        async function handleCommentSubmit(e) {
-            e.preventDefault();
-            const form = e.target;
-            const input = form.querySelector('input');
-            const content = input.value.trim();
-            const postId = form.dataset.postId;
-
-            if (!content || !currentUser) return;
-            input.value = '';
-
-            const { error } = await supabase.from('comments').insert({
-                post_id: postId, user_id: currentUser.uid, content
-            });
-
-            if (!error) {
-                loadComments(postId, form.previousElementSibling);
-                const btnSpan = form.closest('.post-card').querySelector('.comment-btn span');
-                if (btnSpan) btnSpan.textContent = parseInt(btnSpan.textContent) + 1;
-
-                const postCard = form.closest('.post-card');
-                if (postCard && postCard.dataset.authorId) {
-                    createNotification('comment', postId, postCard.dataset.authorId);
-                }
-            }
-        }
-
-        // --- POST ACTIONS ---
-        async function handlePostAction(e) {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-
-            // Auth Gate Interceptor
-            if (btn.dataset.requiresAuth === 'true' && !currentUser) {
-                e.stopPropagation();
-                showAuthGateModal();
-                return;
-            }
-
-            const postId = btn.dataset.postId;
-
-            // 1. THREE-DOT MENU TOGGLE
-            if (btn.classList.contains('three-dot-btn')) {
-                e.stopPropagation();
-                const card = btn.closest('.post-card');
-                const menu = card.querySelector('.post-dropdown-menu');
-                const isVisible = menu.style.display === 'block';
-                closeAllPostMenus();
-                if (!isVisible) {
-                    menu.style.display = 'block';
-                }
-                return;
-            }
-
-            // 2. SHARE MENU TOGGLE
-            if (btn.classList.contains('share-btn')) {
-                e.stopPropagation();
-                const card = btn.closest('.post-card');
-                const menu = card.querySelector('.share-submenu');
-                const isVisible = menu.style.display === 'block';
-                closeAllPostMenus();
-                if (!isVisible) {
-                    menu.style.display = 'block';
-                }
-                return;
-            }
-
-            // 3. COPY LINK / INSTAGRAM COPY
-            if (btn.classList.contains('copy-link-btn') || btn.classList.contains('copy-link-share-btn') || btn.classList.contains('share-instagram-btn')) {
-                const url = btn.dataset.postUrl;
-                try {
-                    await navigator.clipboard.writeText(url);
-                    if (btn.classList.contains('share-instagram-btn')) {
-                        showToast("Link copied! Paste it in your Instagram story or message.", "success");
-                    } else {
-                        showToast("Link copied to clipboard!", "success");
-                    }
-                } catch (err) {
-                    console.error("Clipboard copy error:", err);
-                    showToast("Failed to copy link.", "error");
-                }
-                closeAllPostMenus();
-                return;
-            }
-
-            // 4. NATIVE SHARE
-            if (btn.classList.contains('native-share-btn')) {
-                const url = btn.dataset.postUrl;
-                const title = btn.dataset.postTitle;
-                if (navigator.share) {
-                    navigator.share({ title, url }).catch(err => console.warn("Native share cancelled:", err));
-                }
-                closeAllPostMenus();
-                return;
-            }
-
-            // 5. ABOUT POST TOGGLE
-            if (btn.classList.contains('about-post-btn')) {
-                e.stopPropagation();
-                const card = btn.closest('.post-card');
-                const panel = card.querySelector('.about-post-panel');
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                return;
-            }
-
-            // 6. FOLLOW/UNFOLLOW FROM MENU
-            if (btn.classList.contains('follow-from-menu-btn')) {
-                closeAllPostMenus();
-                const authorId = btn.dataset.authorId;
-                const authorUsername = btn.dataset.authorUsername;
-                const labelSpan = btn.querySelector('.follow-menu-label');
-                const isFollowing = labelSpan.textContent.includes('Unfollow');
-
-                if (isFollowing) {
-                    labelSpan.textContent = `Follow @${authorUsername}`;
-                    try {
-                        const { error } = await supabase.from('followers').delete().eq('follower_id', currentUser.uid).eq('following_id', authorId);
-                        if (error) throw error;
-                        showToast(`Unfollowed @${authorUsername}`, "info");
-                    } catch (err) {
-                        labelSpan.textContent = `Unfollow @${authorUsername}`;
-                        showToast("Failed to unfollow. Please try again.", "error");
-                        console.error(err);
-                    }
-                } else {
-                    labelSpan.textContent = `Unfollow @${authorUsername}`;
-                    try {
-                        const { error } = await supabase.from('followers').insert({ follower_id: currentUser.uid, following_id: authorId });
-                        if (error) throw error;
-                        createNotification('follow', null, authorId);
-                        showToast(`Following @${authorUsername}`, "success");
-                    } catch (err) {
-                        labelSpan.textContent = `Follow @${authorUsername}`;
-                        showToast("Failed to follow. Please try again.", "error");
-                        console.error(err);
-                    }
-                }
-                return;
-            }
-
-            // 7. SAVE/UNSAVE FROM MENU
-            if (btn.classList.contains('save-from-menu-btn')) {
-                closeAllPostMenus();
-                const isSaved = btn.dataset.isSaved === '1';
-                const labelSpan = btn.querySelector('.save-menu-label');
-                const svg = btn.querySelector('svg');
-
-                if (isSaved) {
-                    btn.dataset.isSaved = '0';
-                    labelSpan.textContent = 'Save post';
-                    btn.classList.remove('text-green-600');
-                    btn.classList.add('text-slate-700');
-                    if (svg) {
-                        svg.setAttribute('fill', 'none');
-                        svg.classList.remove('text-green-500');
-                        svg.classList.add('text-slate-500');
-                    }
-                    try {
-                        const { error } = await supabase.from('saved_posts').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
-                        if (error) throw error;
-                    } catch (err) {
-                        btn.dataset.isSaved = '1';
-                        labelSpan.textContent = 'Unsave post';
-                        btn.classList.add('text-green-600');
-                        btn.classList.remove('text-slate-700');
-                        if (svg) {
-                            svg.setAttribute('fill', 'currentColor');
-                            svg.classList.add('text-green-500');
-                            svg.classList.remove('text-slate-500');
-                        }
-                        showToast("Failed to unsave post.", "error");
-                    }
-                } else {
-                    btn.dataset.isSaved = '1';
-                    labelSpan.textContent = 'Unsave post';
-                    btn.classList.add('text-green-600');
-                    btn.classList.remove('text-slate-700');
-                    if (svg) {
-                        svg.setAttribute('fill', 'currentColor');
-                        svg.classList.add('text-green-500');
-                        svg.classList.remove('text-slate-500');
-                    }
-                    try {
-                        const { error } = await supabase.from('saved_posts').insert({ user_id: currentUser.uid, post_id: postId });
-                        if (error) throw error;
-                    } catch (err) {
-                        btn.dataset.isSaved = '0';
-                        labelSpan.textContent = 'Save post';
-                        btn.classList.remove('text-green-600');
-                        btn.classList.add('text-slate-700');
-                        if (svg) {
-                            svg.setAttribute('fill', 'none');
-                            svg.classList.remove('text-green-500');
-                            svg.classList.add('text-slate-500');
-                        }
-                        showToast("Failed to save post.", "error");
-                    }
-                }
-                return;
-            }
-
-            // 8. DELETE FROM MENU
-            if (btn.classList.contains('delete-from-menu-btn')) {
-                closeAllPostMenus();
-                if (confirm("Delete this post?")) {
-                    const { error } = await supabase.from('posts').delete().eq('id', postId);
-                    if (!error) {
-                        btn.closest('.post-card').remove();
-                        const statEl = document.getElementById('posts-count');
-                        if (statEl) statEl.textContent = Math.max(0, parseInt(statEl.textContent) - 1);
-                        showToast("Post deleted successfully", "success");
-                    } else {
-                        showToast("Error deleting post: " + error.message, "error");
-                    }
-                }
-                return;
-            }
-
-            // 9. LIKE
-            if (btn.classList.contains('like-btn')) {
-                if (inFlightLikes.has(postId)) return;
-                inFlightLikes.add(postId);
-
-                const countSpan = btn.querySelector('span');
-                const icon = btn.querySelector('svg');
-                const isLiked = btn.classList.contains('text-red-500');
-
-                if (isLiked) {
-                    btn.classList.remove('text-red-500', 'bg-red-50');
-                    btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
-                    if (icon) icon.setAttribute('fill', 'none');
-                    countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                    try {
-                        const { error } = await supabase.from('likes').delete().eq('user_id', currentUser.uid).eq('post_id', postId);
-                        if (error) throw error;
-                    } catch (err) {
-                        btn.classList.add('text-red-500', 'bg-red-50');
-                        btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
-                        if (icon) icon.setAttribute('fill', 'currentColor');
-                        countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                        showToast("Failed to unlike post.", "error");
-                        console.error("Unlike DB error in profile.html:", err);
-                    }
-                } else {
-                    btn.classList.add('text-red-500', 'bg-red-50');
-                    btn.classList.remove('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
-                    if (icon) icon.setAttribute('fill', 'currentColor');
-                    countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                    try {
-                        const { error } = await supabase.from('likes').insert({ user_id: currentUser.uid, post_id: postId });
-                        if (error) throw error;
-                        const postCard = btn.closest('.post-card');
-                        if (postCard && postCard.dataset.authorId && postCard.dataset.authorId !== currentUser.uid) {
-                            createNotification('like', postId, postCard.dataset.authorId);
-                        }
-                    } catch (err) {
-                        btn.classList.remove('text-red-500', 'bg-red-50');
-                        btn.classList.add('text-slate-500', 'hover:text-red-500', 'hover:bg-red-50');
-                        if (icon) icon.setAttribute('fill', 'none');
-                        countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                        showToast("Failed to like post.", "error");
-                        console.error("Like DB error in profile.html:", err);
-                    }
-                }
-                inFlightLikes.delete(postId);
-            }
-
-            // 10. COMMENT TOGGLE
-            if (btn.classList.contains('comment-btn')) {
-                const card = btn.closest('.post-card');
-                const section = card.querySelector('.comment-section');
-                const isHidden = section.style.display === 'none';
-                section.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) {
-                    loadComments(postId, section.querySelector('.comments-list'));
-                }
-            }
-
-            // 11. DELETE COMMENT
-            if (btn.classList.contains('delete-comment-btn')) {
-                const commentId = btn.dataset.commentId;
-                if (confirm("Delete this comment?")) {
-                    const { error } = await supabase.from('comments').delete().eq('id', commentId);
-                    if (!error) {
-                        const commentDiv = btn.closest('.comment-item');
-                        if (commentDiv) commentDiv.remove();
-
-                        const postCard = btn.closest('.post-card');
-                        const countSpan = postCard.querySelector('.comment-btn span');
-                        if (countSpan) countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
-                    } else {
-                        showToast("Error deleting comment: " + error.message, 'error');
-                    }
-                }
-            }
-        }
+        // loadComments, handleCommentSubmit, and handlePostAction are now imported from shared/ui.js
 
         // --- ATTACH EVENT LISTENERS ---
         const postsContainer = document.getElementById('user-posts-container');
         if (postsContainer) {
-            postsContainer.addEventListener('click', handlePostAction);
+            postsContainer.addEventListener('click', (e) => handlePostAction(supabase, currentUser, e, inFlightLikes, () => {
+                const statEl = document.getElementById('posts-count');
+                if (statEl) statEl.textContent = Math.max(0, parseInt(statEl.textContent, 10) - 1);
+            }));
             postsContainer.addEventListener('submit', (e) => {
-                if (e.target.classList.contains('comment-form')) handleCommentSubmit(e);
+                if (e.target.classList.contains('comment-form')) handleCommentSubmit(supabase, currentUser, e);
             });
         }
 
@@ -660,7 +312,7 @@
             // Render Lists
             const renderTags = (id, tags, color) => {
                 const el = document.getElementById(id);
-                el.innerHTML = tags?.length ? tags.map(t => `<span class="${color} px-2 py-1 rounded text-xs font-bold">${t}</span>`).join('') : '<span class="text-xs text-slate-400">None</span>';
+                el.innerHTML = tags?.length ? tags.map(t => `<span class="${color} px-2 py-1 rounded text-xs font-bold">${escapeHtml(t)}</span>`).join('') : '<span class="text-xs text-slate-400">None</span>';
             };
             renderTags('skills-list', profile.skills, 'bg-slate-200 text-slate-700');
             renderTags('badges-list', profile.badges, 'bg-yellow-100 text-yellow-700');
@@ -691,7 +343,7 @@
         async function checkFollowStatus() {
             if (!currentUser || isOwner) return;
             const btn = document.getElementById('follow-btn');
-            const { data } = await supabase.from('followers').select('id').eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId).single();
+            const { data } = await supabase.from('followers').select('id').eq('follower_id', currentUser.uid).eq('following_id', viewedProfileId).maybeSingle();
 
             if (data) {
                 btn.textContent = "Unfollow";
@@ -784,12 +436,50 @@
             modal.classList.remove('flex');
         });
 
+        const MAX_FILE_SIZE_MB = 50;
+        const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        function validateAvatarFile(file) {
+            if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+                return 'Unsupported file type. Please upload an image (JPG, PNG, GIF, WebP).';
+            }
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                return `File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`;
+            }
+            return null; // valid
+        }
+
         document.getElementById('change-photo-btn').addEventListener('click', () => avatarFileInput.click());
-        avatarFileInput.addEventListener('change', (e) => {
+        avatarFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
+                const error = validateAvatarFile(file);
+                if (error) {
+                    showToast(error, "error");
+                    avatarFileInput.value = '';
+                    return;
+                }
                 newAvatarFile = file;
                 avatarPreview.src = URL.createObjectURL(file);
+
+                const saveBtn = document.getElementById('save-changes-btn');
+                const origText = saveBtn.textContent;
+                saveBtn.disabled = true;
+                saveBtn.textContent = "Compressing...";
+
+                try {
+                    const compressed = await compressImageToWebP(file);
+                    if (compressed && compressed.size < file.size) {
+                        newAvatarFile = compressed;
+                        avatarPreview.src = URL.createObjectURL(compressed);
+                        const savings = Math.round((1 - (compressed.size / file.size)) * 100);
+                        showToast(`Image compressed: ${(compressed.size / 1024).toFixed(0)} KB (was ${(file.size / (1024 * 1024)).toFixed(1)} MB, -${savings}%)`, "success");
+                    }
+                } catch (err) {
+                    console.error("Compression error:", err);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = origText;
+                }
             }
         });
 

@@ -101,28 +101,30 @@
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { escapeHtml } from './shared/ui.js';
 
         let currentUser = null;
 
         // ─── ICON / TEXT MAP ─────────────────────────────────────────────────────
         function getNotifMeta(type, post, actorName) {
-            const preview = post?.content ? `"${post.content.substring(0, 40)}${post.content.length > 40 ? '…' : ''}"` : 'your post';
+            const escapedActor = escapeHtml(actorName);
+            const preview = post?.content ? `"${escapeHtml(post.content.substring(0, 40))}${post.content.length > 40 ? '…' : ''}"` : 'your post';
             if (type === 'like') return {
-                text: `<span class="font-bold">${actorName}</span> liked ${preview}`,
+                text: `<span class="font-bold">${escapedActor}</span> liked ${preview}`,
                 badge: `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500 border-2 border-white absolute -bottom-1 -right-1"><i data-lucide="heart" class="w-3 h-3 text-white"></i></span>`,
                 dot: 'bg-red-500'
             };
             if (type === 'comment') return {
-                text: `<span class="font-bold">${actorName}</span> commented on ${preview}`,
+                text: `<span class="font-bold">${escapedActor}</span> commented on ${preview}`,
                 badge: `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 border-2 border-white absolute -bottom-1 -right-1"><i data-lucide="message-circle" class="w-3 h-3 text-white"></i></span>`,
                 dot: 'bg-blue-500'
             };
             if (type === 'follow') return {
-                text: `<span class="font-bold">${actorName}</span> started following you.`,
+                text: `<span class="font-bold">${escapedActor}</span> started following you.`,
                 badge: `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 border-2 border-white absolute -bottom-1 -right-1"><i data-lucide="user-plus" class="w-3 h-3 text-white"></i></span>`,
                 dot: 'bg-slate-700'
             };
-            return { text: `<span class="font-bold">${actorName}</span> did something.`, badge: '', dot: 'bg-slate-400' };
+            return { text: `<span class="font-bold">${escapedActor}</span> did something.`, badge: '', dot: 'bg-slate-400' };
         }
 
         function buildNotifEl(n, isNew = false) {

@@ -75,7 +75,7 @@
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-8">
+    <main class="max-w-5xl mx-auto px-4 pt-8 pb-28">
         <div class="flex justify-between items-end mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">Groups</h1>
@@ -229,7 +229,7 @@
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { showToast } from './shared/ui.js';
+        import { showToast, escapeHtml } from './shared/ui.js';
 
         let currentUser = null;
         // State for modals
@@ -325,7 +325,7 @@
                 const memberCount = members.length;
                 const isMember = members.some(m => m.user_id === currentUser.uid);
                 const isOwner = group.created_by === currentUser.uid;
-                const gradIdx = group.name.charCodeAt(0) % GRADIENTS.length;
+                const gradIdx = (group.name || '?').charCodeAt(0) % GRADIENTS.length;
                 const gradient = GRADIENTS[gradIdx];
 
                 const card = document.createElement('div');
@@ -334,17 +334,17 @@
                     <!-- Group Header -->
                     <div class="flex items-start gap-3 mb-4">
                         <div class="w-12 h-12 flex-shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold text-xl shadow-md">
-                            ${group.name.substring(0, 2).toUpperCase()}
+                            ${escapeHtml(group.name.substring(0, 2).toUpperCase())}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="text-lg font-bold text-slate-900 leading-tight truncate">${group.name}</h3>
+                                <h3 class="text-lg font-bold text-slate-900 leading-tight truncate">${escapeHtml(group.name)}</h3>
                                 ${isOwner ? `<span class="owner-badge flex-shrink-0">👑 Owner</span>` : ''}
                             </div>
                             <p class="text-xs text-slate-400 mt-0.5">${memberCount} member${memberCount !== 1 ? 's' : ''}</p>
                         </div>
                     </div>
-                    <p class="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">${group.description || ''}</p>
+                    <p class="text-slate-500 text-sm mb-4 line-clamp-2 flex-1">${escapeHtml(group.description || '')}</p>
 
                     <!-- Action Buttons -->
                     <div class="flex gap-2 mt-auto pt-2 border-t border-slate-100">
@@ -371,14 +371,14 @@
                         ${isOwner ? `
                         <button class="manage-members-btn flex-1 py-2 bg-amber-50 text-amber-700 font-bold rounded-lg text-sm hover:bg-amber-100 border border-amber-100 transition flex items-center justify-center gap-1"
                             data-group-id="${group.id}"
-                            data-group-name="${group.name}">
+                            data-group-name="${escapeHtml(group.name)}">
                             <i data-lucide="users" class="w-3.5 h-3.5"></i> Manage
                         </button>` : `
                         <!-- Members count button (for non-owners who are members) -->
                         ${isMember ? `
                         <button class="view-members-btn py-2 px-3 bg-slate-50 text-slate-500 rounded-lg text-sm hover:bg-slate-100 transition border border-slate-100 flex items-center gap-1"
                             data-group-id="${group.id}"
-                            data-group-name="${group.name}">
+                            data-group-name="${escapeHtml(group.name)}">
                             <i data-lucide="users" class="w-3.5 h-3.5"></i>
                         </button>` : ''}`}
                     </div>
@@ -528,21 +528,21 @@
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition group';
                 row.innerHTML = `
-                    <a href="profile.html?username=${username}" class="flex-shrink-0">
+                    <a href="profile.html?username=${escapeHtml(username)}" class="flex-shrink-0">
                         <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border border-slate-200"
-                             onerror="this.src='src/assets/avatar-placeholder.png'">
+                             onerror="this.src='src/assets/avatar-placeholder.png'" loading="lazy" alt="Avatar">
                     </a>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <a href="profile.html?username=${username}" class="font-semibold text-slate-900 text-sm hover:underline truncate">${name}</a>
+                            <a href="profile.html?username=${escapeHtml(username)}" class="font-semibold text-slate-900 text-sm hover:underline truncate">${escapeHtml(name)}</a>
                             ${isGroupOwner ? `<span class="owner-badge">👑 Owner</span>` : ''}
                             ${isSelf && !isGroupOwner ? `<span class="text-xs text-slate-400 font-medium">(You)</span>` : ''}
                         </div>
-                        <p class="text-xs text-slate-400">@${username} · Joined ${joinedDate}</p>
+                        <p class="text-xs text-slate-400">@${escapeHtml(username)} · Joined ${escapeHtml(joinedDate)}</p>
                     </div>
                     ${isOwner && !isGroupOwner ? `
                     <button class="kick-btn opacity-0 group-hover:opacity-100 transition px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg border border-red-100"
-                        data-user-id="${m.user_id}" data-user-name="${name}" title="Remove from group">
+                        data-user-id="${m.user_id}" data-user-name="${escapeHtml(name)}" title="Remove from group">
                         <i data-lucide="user-minus" class="w-3.5 h-3.5 inline -mt-0.5"></i> Remove
                     </button>` : ''}
                 `;
