@@ -217,8 +217,6 @@
             try {
                 await reauthenticate(password);
                 await updateEmail(currentUser, newEmail);
-                // Also update Supabase profiles table if email is stored there
-                await supabase.from('profiles').update({ email: newEmail }).eq('id', currentUser.uid);
 
                 msg.textContent = "Email updated successfully.";
                 msg.className = "text-sm p-2 rounded bg-green-100 text-green-700 block";

@@ -64,8 +64,7 @@ export async function handleEmailPasswordSignUp(fullname, email, password, usern
     const { error: supabaseError } = await supabase.from('profiles').insert({
         id: firebaseUser.uid,
         full_name: fullname,
-        username: username,
-        email: firebaseUser.email
+        username: username
     });
     if (supabaseError) throw supabaseError;
 

@@ -909,7 +909,7 @@
                 let profile = null;
                 try {
                     const { data, error } = await supabase.from('profiles')
-                        .select('id, username, full_name, bio, experience, skills, avatar_url, email')
+                        .select('id, username, full_name, bio, experience, skills, avatar_url')
                         .eq('id', user.uid)
                         .maybeSingle();
                     if (!error) profile = data;

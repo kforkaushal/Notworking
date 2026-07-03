@@ -18,14 +18,17 @@
         .font-sans {
             font-family: 'Inter', sans-serif;
         }
+        .bg-slate-850 {
+            background-color: rgb(24, 32, 49);
+        }
     </style>
 </head>
 
-<body class="bg-gradient-to-tr from-slate-900 via-slate-800 to-blue-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col justify-center items-center p-4">
+<body class="bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col justify-center items-center p-4">
     <!-- Glowing background elements -->
     <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-blue-500/10 blur-[100px] animate-pulse"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-indigo-500/10 blur-[100px] animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-500/10 blur-[120px] animate-pulse"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[120px] animate-pulse" style="animation-delay: 2s;"></div>
     </div>
 
     <div class="max-w-xl w-full">
@@ -35,94 +38,171 @@
         </div>
 
         <!-- Setup Card -->
-        <div class="bg-slate-900/60 border border-slate-700/50 backdrop-blur-xl p-8 rounded-3xl shadow-2xl space-y-6">
-            <div class="text-center">
-                <h1 class="text-3xl font-extrabold tracking-tight text-white">Create Your Identity</h1>
-                <p class="text-slate-400 mt-2">Let the world know how unproductive you really are.</p>
+        <div class="bg-slate-900/70 border border-slate-800/80 backdrop-blur-2xl p-8 rounded-3xl shadow-2xl space-y-6">
+            
+            <!-- Step Indicators -->
+            <div class="flex items-center justify-between max-w-xs mx-auto mb-8">
+                <div class="flex flex-col items-center gap-1.5">
+                    <span id="indicator-1" class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300">1</span>
+                    <span class="text-[10px] font-semibold tracking-wider text-slate-300 uppercase">Identity</span>
+                </div>
+                <div class="h-0.5 bg-slate-800 flex-1 mx-2 mb-4 rounded-full relative overflow-hidden">
+                    <div id="progress-line-1" class="absolute inset-y-0 left-0 bg-blue-600 w-0 transition-all duration-300"></div>
+                </div>
+                <div class="flex flex-col items-center gap-1.5">
+                    <span id="indicator-2" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-sm transition-all duration-300">2</span>
+                    <span class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Avatar</span>
+                </div>
+                <div class="h-0.5 bg-slate-800 flex-1 mx-2 mb-4 rounded-full relative overflow-hidden">
+                    <div id="progress-line-2" class="absolute inset-y-0 left-0 bg-blue-600 w-0 transition-all duration-300"></div>
+                </div>
+                <div class="flex flex-col items-center gap-1.5">
+                    <span id="indicator-3" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-sm transition-all duration-300">3</span>
+                    <span class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Vibe</span>
+                </div>
             </div>
 
             <!-- Error message container -->
-            <div id="error-message" class="hidden p-4 rounded-xl text-sm bg-red-500/20 border border-red-500/50 text-red-200 text-center"></div>
+            <div id="error-message" class="hidden p-4 rounded-xl text-sm bg-red-500/20 border border-red-500/50 text-red-200 text-center animate-pulse"></div>
 
-            <form id="setup-form" class="space-y-5">
-                <!-- Name & Username row -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="fullname" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
-                        <input id="fullname" name="fullname" type="text" required
-                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="John Doe">
+            <form id="setup-form" class="space-y-6">
+                
+                <!-- STEP 1: IDENTITY -->
+                <div id="step-identity" class="space-y-5">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-black text-white">Let's start with who you are</h2>
+                        <p class="text-slate-400 text-sm mt-1">Set up your username and display name.</p>
                     </div>
-                    <div>
-                        <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Username</label>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="fullname" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Display Name</label>
+                            <input id="fullname" name="fullname" type="text" required
+                                class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                placeholder="E.g., John Doe">
+                        </div>
+                        <div>
+                            <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Choose a Unique Username</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-3.5 text-slate-500">@</span>
+                                <input id="username" name="username" type="text" required
+                                    class="w-full bg-slate-850 border border-slate-700/60 rounded-xl pl-8 pr-10 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                    placeholder="username">
+                                <span id="username-spinner" class="absolute right-3 top-3.5 hidden">
+                                    <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                                <span id="username-check" class="absolute right-3 top-3.5 hidden">
+                                    <i data-lucide="check" class="w-5 h-5 text-green-500"></i>
+                                </span>
+                                <span id="username-cross" class="absolute right-3 top-3.5 hidden">
+                                    <i data-lucide="x" class="w-5 h-5 text-red-500"></i>
+                                </span>
+                            </div>
+                            <p id="username-helper" class="text-xs mt-1.5 text-slate-500">Usernames can contain letters, numbers, and underscores.</p>
+                        </div>
+                    </div>
+
+                    <button type="button" id="btn-to-step2" disabled
+                        class="w-full mt-6 bg-slate-800 text-slate-500 font-semibold py-3.5 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2 cursor-not-allowed">
+                        <span>Continue to Avatar</span>
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- STEP 2: AVATAR -->
+                <div id="step-avatar" class="space-y-5 hidden">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-black text-white">Select your slacker look</h2>
+                        <p class="text-slate-400 text-sm mt-1">Pick a preset bot or customize using an image URL.</p>
+                    </div>
+
+                    <!-- Selected Avatar Preview -->
+                    <div class="flex justify-center mb-4">
                         <div class="relative">
-                            <span class="absolute left-4 top-3 text-slate-500">@</span>
-                            <input id="username" name="username" type="text" required
-                                class="w-full bg-slate-850 border border-slate-700/60 rounded-xl pl-8 pr-10 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                                placeholder="johndoe">
-                            <span id="username-spinner" class="absolute right-3 top-3.5 hidden">
-                                <svg class="animate-spin h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </span>
-                            <span id="username-check" class="absolute right-3 top-3 hidden">
-                                <i data-lucide="check" class="w-6 h-6 text-green-500"></i>
-                            </span>
-                            <span id="username-cross" class="absolute right-3 top-3 hidden">
-                                <i data-lucide="x" class="w-6 h-6 text-red-500"></i>
-                            </span>
+                            <div class="absolute inset-0 rounded-full bg-blue-500/20 blur-md animate-pulse"></div>
+                            <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=lazy" 
+                                class="relative w-28 h-28 rounded-full border-4 border-slate-700 p-2 bg-slate-800 object-cover shadow-2xl">
                         </div>
-                        <p id="username-helper" class="text-xs mt-1.5 text-slate-500">Usernames must be unique.</p>
                     </div>
-                </div>
 
-                <!-- Avatar Presets -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Choose Avatar</label>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <div id="avatar-presets" class="flex gap-3">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=lazy" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=lazy">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=clown" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=clown">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=ghost" class="w-12 h-12 rounded-full border-2 border-slate-700 hover:border-blue-500 cursor-pointer transition p-1 bg-slate-800" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=ghost">
+                    <!-- Presets Grid -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Preset Candidates</label>
+                        <div id="avatar-presets" class="flex justify-center gap-4 flex-wrap">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=lazy" class="w-14 h-14 rounded-full border-2 border-blue-500 hover:border-blue-400 cursor-pointer transition p-1 bg-slate-800 shadow-md" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=lazy">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=clown" class="w-14 h-14 rounded-full border-2 border-slate-700 hover:border-blue-400 cursor-pointer transition p-1 bg-slate-800 shadow-md" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=clown">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy" class="w-14 h-14 rounded-full border-2 border-slate-700 hover:border-blue-400 cursor-pointer transition p-1 bg-slate-800 shadow-md" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=sleepy">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=ghost" class="w-14 h-14 rounded-full border-2 border-slate-700 hover:border-blue-400 cursor-pointer transition p-1 bg-slate-800 shadow-md" data-avatar="https://api.dicebear.com/7.x/bottts/svg?seed=ghost">
                         </div>
+                    </div>
+
+                    <div>
+                        <label for="avatar-url" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Or Use Custom Image URL</label>
                         <input id="avatar-url" name="avatar_url" type="url"
-                            class="flex-1 min-w-[200px] bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="Or paste custom image URL...">
+                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
+                            placeholder="https://example.com/avatar.png">
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button type="button" id="btn-back-to-step1"
+                            class="flex-1 bg-slate-800 hover:bg-slate-750 text-white font-semibold py-3.5 rounded-xl transition duration-200">
+                            Back
+                        </button>
+                        <button type="button" id="btn-to-step3"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2">
+                            <span>Next: Vibe</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Funny Bio -->
-                <div>
-                    <label for="bio" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Funny Slacker Bio</label>
-                    <textarea id="bio" name="bio" required rows="2"
-                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
-                        placeholder="Thrilled to announce that I have completed another day of scrolling LinkedIn. 🤡"></textarea>
+                <!-- STEP 3: VIBE / SLACKER CREDENTIALS -->
+                <div id="step-vibe" class="space-y-5 hidden">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-black text-white">Define your professional vibe</h2>
+                        <p class="text-slate-400 text-sm mt-1">Set up your bio, skills, and experience summary.</p>
+                    </div>
+
+                    <!-- Funny Bio -->
+                    <div>
+                        <label for="bio" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Funny Slacker Bio</label>
+                        <textarea id="bio" name="bio" required rows="2"
+                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
+                            placeholder="Thrilled to announce that I have completed another day of scrolling LinkedIn. 🤡"></textarea>
+                    </div>
+
+                    <!-- Unprofessional Experience -->
+                    <div>
+                        <label for="experience" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Experience Summary</label>
+                        <textarea id="experience" name="experience" required rows="2"
+                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
+                            placeholder="Over 3 years of experience being ghosted by recruiters, collecting automated rejection letters, and pretending to work in standup calls."></textarea>
+                    </div>
+
+                    <!-- Slacker Skills -->
+                    <div>
+                        <label for="skills" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Slacker Skills (comma separated)</label>
+                        <input id="skills" name="skills" type="text" required
+                            class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
+                            placeholder="Closing Zoom meeting early, Procrastination, Looking busy, Sleeping with eyes open">
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button type="button" id="btn-back-to-step2"
+                            class="flex-1 bg-slate-800 hover:bg-slate-750 text-white font-semibold py-3.5 rounded-xl transition duration-200">
+                            Back
+                        </button>
+                        <button type="submit" id="submit-btn"
+                            class="flex-[2] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg transition duration-200 transform hover:scale-[1.01] flex items-center justify-center gap-2">
+                            <span>Start Slackin'</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Unprofessional Experience -->
-                <div>
-                    <label for="experience" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Experience Summary</label>
-                    <textarea id="experience" name="experience" required rows="2"
-                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm resize-none"
-                        placeholder="Over 3 years of experience being ghosted by recruiters, collecting automated rejection letters, and pretending to work in standup calls."></textarea>
-                </div>
-
-                <!-- Slacker Skills -->
-                <div>
-                    <label for="skills" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Slacker Skills (comma separated)</label>
-                    <input id="skills" name="skills" type="text" required
-                        class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
-                        placeholder="Closing Zoom meeting early, Procrastination, Looking busy, Sleeping with eyes open">
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" id="submit-btn"
-                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg transition duration-200 transform hover:scale-[1.01] flex items-center justify-center gap-2">
-                    <span>Activate Account & Start Slackin'</span>
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </button>
             </form>
         </div>
     </div>
@@ -138,6 +218,67 @@
         let currentUser = null;
         let usernameValid = false;
         let checkTimeout;
+        let currentStep = 1;
+
+        const steps = [
+            document.getElementById('step-identity'),
+            document.getElementById('step-avatar'),
+            document.getElementById('step-vibe')
+        ];
+
+        // Step Navigation logic
+        function updateStepUI() {
+            steps.forEach((step, idx) => {
+                if (idx + 1 === currentStep) {
+                    step.classList.remove('hidden');
+                } else {
+                    step.classList.add('hidden');
+                }
+            });
+
+            // Update step indicators and progress lines
+            const ind2 = document.getElementById('indicator-2');
+            const ind3 = document.getElementById('indicator-3');
+            const line1 = document.getElementById('progress-line-1');
+            const line2 = document.getElementById('progress-line-2');
+
+            // Reset
+            ind2.className = "w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-sm transition-all duration-300";
+            ind3.className = "w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-sm transition-all duration-300";
+            line1.style.width = '0%';
+            line2.style.width = '0%';
+
+            if (currentStep >= 2) {
+                ind2.className = "w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300";
+                line1.style.width = '100%';
+            }
+            if (currentStep >= 3) {
+                ind3.className = "w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300";
+                line2.style.width = '100%';
+            }
+        }
+
+        document.getElementById('btn-to-step2').addEventListener('click', () => {
+            if (usernameValid) {
+                currentStep = 2;
+                updateStepUI();
+            }
+        });
+
+        document.getElementById('btn-back-to-step1').addEventListener('click', () => {
+            currentStep = 1;
+            updateStepUI();
+        });
+
+        document.getElementById('btn-to-step3').addEventListener('click', () => {
+            currentStep = 3;
+            updateStepUI();
+        });
+
+        document.getElementById('btn-back-to-step2').addEventListener('click', () => {
+            currentStep = 2;
+            updateStepUI();
+        });
 
         // Verify Authentication on Load
         onAuthStateChanged(auth, async (user) => {
@@ -189,6 +330,7 @@
         const spinner = document.getElementById('username-spinner');
         const checkIcon = document.getElementById('username-check');
         const crossIcon = document.getElementById('username-cross');
+        const toStep2Btn = document.getElementById('btn-to-step2');
 
         async function checkUsername(val) {
             val = val.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -200,6 +342,7 @@
                 checkIcon.classList.add('hidden');
                 crossIcon.classList.remove('hidden');
                 usernameValid = false;
+                updateSubmitState();
                 return;
             }
 
@@ -231,6 +374,17 @@
                 spinner.classList.add('hidden');
                 console.error("Error checking username:", err);
             }
+            updateSubmitState();
+        }
+
+        function updateSubmitState() {
+            if (usernameValid) {
+                toStep2Btn.disabled = false;
+                toStep2Btn.className = "w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg transition duration-200 flex items-center justify-center gap-2 cursor-pointer";
+            } else {
+                toStep2Btn.disabled = true;
+                toStep2Btn.className = "w-full mt-6 bg-slate-800 text-slate-500 font-semibold py-3.5 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2 cursor-not-allowed";
+            }
         }
 
         usernameInput.addEventListener('input', (e) => {
@@ -242,6 +396,7 @@
                 checkIcon.classList.add('hidden');
                 crossIcon.classList.add('hidden');
                 usernameValid = false;
+                updateSubmitState();
                 return;
             }
             checkTimeout = setTimeout(() => checkUsername(val), 400);
@@ -250,6 +405,7 @@
         // Preset avatar selection logic
         const presetContainer = document.getElementById('avatar-presets');
         const customAvatarInput = document.getElementById('avatar-url');
+        const previewImage = document.getElementById('avatar-preview');
 
         presetContainer.addEventListener('click', (e) => {
             if (e.target.tagName === 'IMG') {
@@ -260,6 +416,7 @@
         });
 
         function selectAvatarPreset(url) {
+            previewImage.src = url;
             Array.from(presetContainer.children).forEach(img => {
                 if (img.getAttribute('data-avatar') === url) {
                     img.classList.replace('border-slate-700', 'border-blue-500');
@@ -270,7 +427,9 @@
         }
 
         customAvatarInput.addEventListener('input', (e) => {
-            selectAvatarPreset(e.target.value);
+            const url = e.target.value.trim() || 'https://api.dicebear.com/7.x/bottts/svg?seed=lazy';
+            previewImage.src = url;
+            selectAvatarPreset(url);
         });
 
         // Form Submit Handler
@@ -283,6 +442,8 @@
 
             if (!currentUser) return;
             if (!usernameValid) {
+                currentStep = 1;
+                updateStepUI();
                 errorMessage.textContent = "Please select a valid, unique username first.";
                 errorMessage.classList.remove('hidden');
                 return;
@@ -302,13 +463,12 @@
             const skills = form.skills.value.split(',').map(s => s.trim()).filter(Boolean);
 
             try {
-                // 1. Save Profile in Supabase using upsert
+                // 1. Save Profile in Supabase using upsert (FIX: Omitted 'email' to prevent missing column error)
                 const supabasePayload = {
                     id: currentUser.uid,
                     full_name: fullname,
                     username: username,
                     avatar_url: avatar,
-                    email: currentUser.email,
                     bio: bio,
                     experience: experience,
                     skills: skills,
@@ -344,7 +504,7 @@
             } catch (err) {
                 console.error("Profile Setup Error:", err);
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `<span>Activate Account & Start Slackin'</span><i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+                submitBtn.innerHTML = `<span>Start Slackin'</span><i data-lucide="arrow-right" class="w-5 h-5"></i>`;
                 lucide.createIcons();
                 errorMessage.textContent = `Error completing profile: ${err.message || err}`;
                 errorMessage.classList.remove('hidden');
