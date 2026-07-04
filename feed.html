@@ -618,7 +618,7 @@
                     profiles: {
                         username: document.getElementById('nav-profile-name').textContent || 'Me', // Fallback
                         full_name: currentUser.displayName || 'Me',
-                        avatar_url: currentUser.photoURL || 'src/assets/avatar-placeholder.png'
+                        avatar_url: document.getElementById('nav-profile-img')?.src || currentUser.photoURL || 'src/assets/avatar-placeholder.png'
                     },
                     is_liked_by_user: false,
                     is_saved_by_user: false
@@ -1257,6 +1257,43 @@
                 const commentSection = postCard.querySelector('.comment-section');
                 if (!commentSection.classList.contains('hidden')) {
                     loadComments(postId, commentSection.querySelector('.comments-list'));
+                }
+            }
+        }).subscribe();
+
+        // Realtime updates for user profiles
+        supabase.channel('public:profiles').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+            const updatedProfile = payload.new;
+            if (updatedProfile && updatedProfile.id) {
+                const newAvatar = updatedProfile.avatar_url || 'src/assets/avatar-placeholder.png';
+                const newName = updatedProfile.full_name || 'Anonymous';
+
+                // 1. Update all post cards authored by this user
+                document.querySelectorAll(`.post-card[data-author-id="${updatedProfile.id}"]`).forEach(card => {
+                    const headerImg = card.querySelector('a img');
+                    if (headerImg) headerImg.src = newAvatar;
+
+                    const nameLink = card.querySelector('a.font-bold');
+                    if (nameLink) nameLink.textContent = newName;
+                });
+
+                // 2. Update all comment items authored by this user
+                document.querySelectorAll(`.comment-item[data-author-id="${updatedProfile.id}"]`).forEach(comment => {
+                    const commentImg = comment.querySelector('img');
+                    if (commentImg) commentImg.src = newAvatar;
+                });
+
+                // 3. If this is the current user updating their own profile, update navbar and comment input box avatars
+                if (currentUser && updatedProfile.id === currentUser.uid) {
+                    const navImg = document.getElementById('nav-profile-img');
+                    if (navImg) navImg.src = newAvatar;
+
+                    const createImg = document.getElementById('create-post-avatar');
+                    if (createImg) createImg.src = newAvatar;
+
+                    document.querySelectorAll('.current-user-avatar').forEach(img => {
+                        img.src = newAvatar;
+                    });
                 }
             }
         }).subscribe();

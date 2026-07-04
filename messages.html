@@ -1221,6 +1221,40 @@
                 // Load user's conversations
                 await loadConversations();
 
+                // Realtime updates for profile updates (e.g. avatar or name changes)
+                supabase.channel('public:profiles').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+                    const updatedProfile = payload.new;
+                    if (updatedProfile && updatedProfile.id) {
+                        const newAvatar = updatedProfile.avatar_url || 'src/assets/avatar-placeholder.png';
+                        const newName = updatedProfile.full_name || 'Anonymous';
+
+                        // 1. Update matching conversation item in the sidebar list
+                        const convoItem = document.querySelector(`[data-user-id="${updatedProfile.id}"]`);
+                        if (convoItem) {
+                            const img = convoItem.querySelector('img');
+                            if (img) img.src = newAvatar;
+
+                            const nameText = convoItem.querySelector('.font-bold');
+                            if (nameText) nameText.textContent = newName;
+                        }
+
+                        // 2. If it's the active chat, update header
+                        if (activeConversationUserId === updatedProfile.id) {
+                            const headerAvatar = document.getElementById('chat-header-avatar');
+                            if (headerAvatar) headerAvatar.src = newAvatar;
+
+                            const headerName = document.getElementById('chat-header-name');
+                            if (headerName) headerName.textContent = newName;
+                        }
+
+                        // 3. If it's the current user updating their own profile, update navbar avatar
+                        if (updatedProfile.id === user.uid) {
+                            const navImg = document.getElementById('nav-profile-img');
+                            if (navImg) navImg.src = newAvatar;
+                        }
+                    }
+                }).subscribe();
+
                 // Set up a global listener for ANY incoming message
                 if (globalMessagesChannel) {
                     supabase.removeChannel(globalMessagesChannel);

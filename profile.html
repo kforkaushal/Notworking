@@ -506,7 +506,8 @@
                 const newExp = document.getElementById('edit-experience').value;
                 const newSkills = document.getElementById('edit-skills').value.split(',').map(s => s.trim()).filter(Boolean);
 
-                let avatarUrl = document.getElementById('profile-image').src;
+                const previousAvatarUrl = document.getElementById('profile-image').src;
+                let avatarUrl = previousAvatarUrl;
                 if (newAvatarFile) {
                     avatarUrl = await uploadAvatarFile(newAvatarFile, currentUser.uid);
                 }
@@ -527,6 +528,24 @@
                 });
 
                 if (error) throw error;
+
+                // Cleanup previous avatar from storage if a new one was uploaded
+                if (newAvatarFile && previousAvatarUrl) {
+                    try {
+                        const marker = '/storage/v1/object/public/media/';
+                        const markerIndex = previousAvatarUrl.indexOf(marker);
+                        if (markerIndex !== -1) {
+                            const oldPath = previousAvatarUrl.substring(markerIndex + marker.length);
+                            console.log("Cleaning up old avatar from storage:", oldPath);
+                            const { error: deleteError } = await supabase.storage.from('media').remove([oldPath]);
+                            if (deleteError) {
+                                console.warn("Failed to delete old avatar file from Supabase storage:", deleteError.message);
+                            }
+                        }
+                    } catch (cleanupErr) {
+                        console.warn("Non-fatal old avatar cleanup error:", cleanupErr);
+                    }
+                }
 
                 window.location.reload();
             } catch (err) {

@@ -142,13 +142,13 @@ export function createPostElement(post, currentUser, options = {}) {
     const isLiked = post.is_liked_by_user || false;
     const isSaved = options.isSavedPage || post.is_saved_by_user || false;
 
-    // Current user's avatar for comment box
+    // Current user's avatar for comment box (prefer live nav-profile-img DOM value)
     let myAvatar = 'src/assets/avatar-placeholder.png';
-    if (currentUser && currentUser.photoURL) {
+    const navImg = document.getElementById('nav-profile-img');
+    if (navImg && navImg.src && !navImg.src.includes('avatar-placeholder')) {
+        myAvatar = navImg.src;
+    } else if (currentUser && currentUser.photoURL) {
         myAvatar = currentUser.photoURL;
-    } else {
-        const navImg = document.getElementById('nav-profile-img');
-        if (navImg && navImg.src && !navImg.src.includes('avatar-placeholder')) myAvatar = navImg.src;
     }
 
     // Share URLs
@@ -404,6 +404,7 @@ export async function loadComments(supabase, currentUser, postId, container) {
 
         const div = document.createElement('div');
         div.className = "comment-item flex gap-2 mb-2 text-sm group";
+        div.dataset.authorId = c.user_id;
         div.innerHTML = `
         <img src="${c.profiles?.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-6 h-6 rounded-full mt-1 object-cover" loading="lazy" alt="Avatar">
         <div class="flex-1">
@@ -460,6 +461,7 @@ export async function handleCommentSubmit(supabase, currentUser, e) {
 
         const div = document.createElement('div');
         div.className = "comment-item flex gap-2 mb-2 text-sm group";
+        div.dataset.authorId = data.user_id;
         div.innerHTML = `
         <img src="${data.profiles?.avatar_url || 'src/assets/avatar-placeholder.png'}" class="w-6 h-6 rounded-full mt-1 object-cover" loading="lazy" alt="Avatar">
         <div class="flex-1">
