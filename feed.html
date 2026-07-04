@@ -482,7 +482,9 @@
         import { doc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
         import { createPostElement, createPostSkeleton, showToast as showGlobalToast, showAuthGateModal, closeAllPostMenus, escapeHtml, handlePostAction, handleCommentSubmit, compressImageToWebP } from './shared/ui.js';
 
-        let currentPage = 0;
+
+
+        let currentSearchQuery = '';
         const POSTS_PER_PAGE = 5;
         let isLoading = false;
         let hasMore = true;
@@ -632,6 +634,7 @@
 
                 container.prepend(newPostEl);
                 lucide.createIcons({ nodes: [newPostEl] }); // Render icons for the new post
+                renderedPostIds.add(newPost.id);
                 showGlobalToast("Posted successfully!", "success");
 
             } catch (err) {
@@ -653,7 +656,7 @@
             if (!currentUser || postIds.length === 0) return {};
             const { data, error } = await supabase
                 .from('likes')
-                .select('post_id')
+                .select('post_id::text')
                 .eq('user_id', currentUser.uid)
                 .in('post_id', postIds);
 
@@ -662,8 +665,7 @@
                 console.warn('getPostLikeStates failed (RLS policy missing?):', error.message);
                 return {};
             }
-            // Use String keys to prevent bigint vs number mismatch when looking up post.id
-            return (data || []).reduce((acc, like) => ({ ...acc, [String(like.post_id)]: true }), {});
+            return (data || []).reduce((acc, like) => ({ ...acc, [like.post_id]: true }), {});
         }
 
         // --- FETCH POSTS (Safe Version) ---
@@ -674,8 +676,11 @@
             const container = document.getElementById("feed-posts-container");
             const sentinelSpinner = document.querySelector('#scroll-sentinel i');
 
-            if (currentPage > 0) {
-                sentinelSpinner.classList.remove('opacity-0');
+            const isInitialLoad = (renderedPostIds.size === 0);
+            console.log("[FETCH] start. search:", searchTerm, "isInitialLoad:", isInitialLoad, "renderedPostIds count:", renderedPostIds.size);
+
+            if (!isInitialLoad) {
+                if (sentinelSpinner) sentinelSpinner.classList.remove('opacity-0');
             } else {
                 // Show shimmering skeletons while loading initial posts
                 container.innerHTML = '';
@@ -689,15 +694,15 @@
             }
 
             try {
-                const from = currentPage * POSTS_PER_PAGE;
-                const to = from + POSTS_PER_PAGE - 1;
+                const from = 0;
+                const to = POSTS_PER_PAGE - 1;
 
                 // Load target post on first page if provided as deep link
                 let targetPost = null;
-                if (currentPage === 0 && targetPostId && !searchTerm) {
+                if (isInitialLoad && targetPostId && !searchTerm) {
                     try {
                         const { data, error } = await supabase.from("posts")
-                            .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                            .select(`id::text, user_id, content, media_url, media_type, created_at, group_id, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                             .eq('id', targetPostId)
                             .maybeSingle();
                         if (data && !error) {
@@ -720,7 +725,7 @@
                 }
 
                 let query = supabase.from("posts")
-                    .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                    .select(`id::text, user_id, content, media_url, media_type, created_at, group_id, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                     .ilike('content', `%${searchTerm}%`) // Filter posts by content
                     .order("created_at", { ascending: false })
                     .range(from, to);
@@ -734,10 +739,13 @@
 
                 // Exclude targetPost if already rendered
                 if (renderedPostIds.size > 0) {
-                    query = query.not('id', 'in', `(${Array.from(renderedPostIds).join(',')})`);
+                    const excludeList = `(${Array.from(renderedPostIds).join(',')})`;
+                    console.log("[FETCH] excluding IDs:", excludeList);
+                    query = query.not('id', 'in', excludeList);
                 }
 
                 let { data: posts, error } = await query;
+                console.log("[FETCH] response posts count:", posts ? posts.length : 0, "error:", error ? error.message : null);
 
                 if (posts && posts.length > 0) {
                     const postIds = posts.map(p => p.id);
@@ -767,12 +775,12 @@
                 }
 
                 if ((posts && posts.length > 0) || targetPost) {
-                    if (currentPage === 0) {
+                    if (isInitialLoad) {
                         container.innerHTML = ''; // clear the skeletons!
                     }
 
                     // Render target post first if page is 0
-                    if (currentPage === 0 && targetPost) {
+                    if (isInitialLoad && targetPost) {
                         const el = createPostElement(targetPost, currentUser);
                         // Highlight target post with standard Tailwind border and subtle shadow
                         el.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'transition-all');
@@ -794,13 +802,15 @@
                         });
                     }
                     
-                    currentPage++;
                     if (posts && posts.length < POSTS_PER_PAGE) {
                         hasMore = false;
                     }
-                } else if (currentPage === 0) {
+                } else if (isInitialLoad) {
                     container.innerHTML = '<div class="text-center py-10 text-slate-500">No posts yet. Be the first!</div>';
                     hasMore = false;
+                } else {
+                    hasMore = false;
+                    console.log("[FETCH] No more posts returned on scroll. Setting hasMore = false.");
                 }
             } catch (err) {
                 console.error("Feed Error:", err);
@@ -822,7 +832,7 @@
             if (!currentUser || postIds.length === 0) return {};
             const { data, error } = await supabase
                 .from('saved_posts')
-                .select('post_id')
+                .select('post_id::text')
                 .eq('user_id', currentUser.uid)
                 .in('post_id', postIds);
 
@@ -830,7 +840,7 @@
                 console.warn('getPostSaveStates failed (RLS policy missing?):', error.message);
                 return {};
             }
-            return (data || []).reduce((acc, save) => ({ ...acc, [String(save.post_id)]: true }), {});
+            return (data || []).reduce((acc, save) => ({ ...acc, [save.post_id]: true }), {});
         }
 
         async function getFollowStates(authorIds) {
@@ -851,10 +861,7 @@
         // --- OPTIMIZATION: INTERSECTION OBSERVER FOR INFINITE SCROLL ---
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && !isLoading && hasMore) {
-                // Only fetch if not searching (check both desktop and mobile search bars)
-                const searchBars = Array.from(document.querySelectorAll('.search-bar'));
-                const hasSearchQuery = searchBars.some(bar => bar.value.trim().length >= 2);
-                if (!hasSearchQuery) fetchPosts();
+                fetchPosts(currentSearchQuery);
             }
         }, { rootMargin: '200px' });
 
@@ -933,7 +940,7 @@
                 });
 
                 // Start Feed
-                if (currentPage === 0) fetchPosts();
+                if (renderedPostIds.size === 0) fetchPosts();
 
                 // Onboarding Check (Only if they just completed setup)
                 if (localStorage.getItem('nw_just_onboarded') === 'true') {
@@ -1059,7 +1066,7 @@
                 const logoutNavLi = document.getElementById('logout-btn')?.closest('li');
                 if (logoutNavLi) logoutNavLi.style.display = 'none';
 
-                if (currentPage === 0) fetchPosts();
+                if (renderedPostIds.size === 0) fetchPosts();
             }
         });
 
@@ -1196,7 +1203,7 @@
 
             // A new post has been inserted, let's fetch its full data
             const { data: newPost, error } = await supabase.from('posts')
-                .select(`*, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
+                .select(`id::text, user_id, content, media_url, media_type, created_at, group_id, likes(count), comments(count), profiles(username, full_name, avatar_url)`)
                 .eq('id', newPostId)
                 .single();
 
@@ -1211,6 +1218,7 @@
 
                 container.prepend(postElement);
                 lucide.createIcons({ nodes: [postElement] }); // Render icons for the new post
+                renderedPostIds.add(newPost.id);
             }
         }).subscribe();
 
@@ -1296,7 +1304,8 @@
             postSearchEl.addEventListener('click', (e) => {
                 e.preventDefault();
                 document.getElementById('feed-posts-container').innerHTML = '';
-                currentPage = 0;
+                renderedPostIds.clear();
+                currentSearchQuery = term;
                 hasMore = true;
                 fetchPosts(term);
                 resultsContainer.classList.add('hidden');
