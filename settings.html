@@ -44,7 +44,7 @@
     <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
-            <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-4">
                 <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
                 <a href="profile.html">
                     <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
@@ -54,7 +54,7 @@
         </div>
     </nav>
 
-    <main class="max-w-3xl mx-auto px-4 py-8">
+    <main class="max-w-3xl mx-auto px-4 pt-8 pb-28">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-slate-900">Account Settings</h1>
             <p class="text-slate-500 mt-1">Manage your security and privacy.</p>
@@ -125,11 +125,17 @@
         </div>
     </main>
 
+    <!-- Mobile Bottom Nav Container -->
+    <div id="mobile-nav-container"></div>
+
     <script type="module">
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
-        import { showToast } from './shared/ui.js';
+        import { showToast, injectMobileBottomNav } from './shared/ui.js';
         import { onAuthStateChanged, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        // Initialize mobile bottom nav
+        injectMobileBottomNav('profile');
 
         let currentUser = null;
 

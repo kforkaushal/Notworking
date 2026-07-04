@@ -845,3 +845,61 @@ export async function compressImageToWebP(file, options = {}) {
     }
 }
 
+// ─── Reusable Mobile Bottom Navigation Injector ────────────────────────────────
+export function injectMobileBottomNav(activeTab) {
+    let container = document.getElementById('mobile-nav-container');
+    if (!container) {
+        container = document.querySelector('.mobile-bottom-nav');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'mobile-nav-container';
+            document.body.appendChild(container);
+        } else {
+            container.id = 'mobile-nav-container';
+        }
+    }
+
+    const tabs = {
+        home: { href: 'feed.html', icon: 'home', label: 'Home' },
+        groups: { href: 'groups.html', icon: 'users-2', label: 'Groups' },
+        saved: { href: 'save.html', icon: 'bookmark', label: 'Saved' },
+        messages: { href: 'messages.html', icon: 'message-square', label: 'Msgs', isMsg: true },
+        profile: { href: 'profile.html', icon: 'profile', label: 'Profile', isProfile: true }
+    };
+
+    let html = `<div class="mobile-bottom-nav shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">`;
+    for (const [key, tab] of Object.entries(tabs)) {
+        const isActive = key === activeTab;
+        const activeClass = isActive ? 'active text-brand-blue' : '';
+
+        if (tab.isProfile) {
+            html += `
+            <a href="${tab.href}" class="mobile-nav-item ${activeClass}">
+                <img id="mobile-nav-profile-img" src="src/assets/avatar-placeholder.png"
+                    class="w-6 h-6 rounded-full border border-slate-200 object-cover">
+                <span>${tab.label}</span>
+            </a>`;
+        } else if (tab.isMsg) {
+            html += `
+            <a href="${tab.href}" class="mobile-nav-item relative ${activeClass}">
+                <i data-lucide="${tab.icon}"></i>
+                <span>${tab.label}</span>
+                <span id="mobile-msg-badge" class="hidden absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+            </a>`;
+        } else {
+            html += `
+            <a href="${tab.href}" class="mobile-nav-item ${activeClass}">
+                <i data-lucide="${tab.icon}"></i>
+                <span>${tab.label}</span>
+            </a>`;
+        }
+    }
+    html += `</div>`;
+
+    container.outerHTML = html;
+
+    if (window.lucide) {
+        window.lucide.createIcons({ nodes: [document.querySelector('.mobile-bottom-nav')] });
+    }
+}
+

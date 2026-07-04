@@ -44,7 +44,7 @@
     <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="feed.html"><img src="src/assets/logo.svg" class="h-10 w-auto" alt="logo" /></a>
-            <div class="hidden sm:flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-4">
                 <a href="feed.html" class="text-slate-500 hover:text-brand-blue font-bold text-sm">Back to Feed</a>
                 <a href="profile.html">
                     <img id="nav-profile-img" src="src/assets/avatar-placeholder.png"
@@ -54,7 +54,7 @@
         </div>
     </nav>
 
-    <main class="max-w-2xl mx-auto px-4 py-8">
+    <main class="max-w-2xl mx-auto px-4 pt-8 pb-28">
         <div class="mb-8 flex justify-between items-end">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">Notifications</h1>
@@ -72,36 +72,17 @@
     </main>
 
     <!-- Mobile Bottom Nav -->
-    <div class="mobile-bottom-nav shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <a href="feed.html" class="mobile-nav-item">
-            <i data-lucide="home"></i>
-            <span>Home</span>
-        </a>
-        <a href="groups.html" class="mobile-nav-item">
-            <i data-lucide="users-2"></i>
-            <span>Groups</span>
-        </a>
-        <a href="save.html" class="mobile-nav-item">
-            <i data-lucide="bookmark"></i>
-            <span>Saved</span>
-        </a>
-        <a href="messages.html" class="mobile-nav-item relative">
-            <i data-lucide="message-square"></i>
-            <span>Msgs</span>
-            <span id="mobile-msg-badge" class="hidden absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-        </a>
-        <a href="profile.html" class="mobile-nav-item">
-            <img id="mobile-nav-profile-img" src="src/assets/avatar-placeholder.png"
-                class="w-6 h-6 rounded-full border border-slate-200">
-            <span>Profile</span>
-        </a>
-    </div>
+    <!-- Mobile Bottom Nav Container -->
+    <div id="mobile-nav-container"></div>
 
     <script type="module">
         import { auth } from './Data/firebase-client.js';
         import supabase, { setSupabaseToken } from './Data/supabase-client.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { escapeHtml } from './shared/ui.js';
+        import { escapeHtml, injectMobileBottomNav } from './shared/ui.js';
+
+        // Initialize mobile bottom nav
+        injectMobileBottomNav('none');
 
         let currentUser = null;
 
